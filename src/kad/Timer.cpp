@@ -25,18 +25,18 @@
  * =============================================================================
  */
 
-#include "DelayEvent.h"
+#include "Timer.h"
 
 
 namespace kad
 {
-  DelayEvent::DelayEvent()
+  Timer::Timer()
   {
-    this->thread = std::thread(std::bind(&DelayEvent::ThreadProc, this));
+    this->thread = std::thread(std::bind(&Timer::ThreadProc, this));
   }
 
 
-  DelayEvent::~DelayEvent()
+  Timer::~Timer()
   {
     this->quit = true;
 
@@ -53,10 +53,11 @@ namespace kad
   }
 
 
-  std::pair<void *, void *> DelayEvent::Reset(int msTime, EventHandler handler, void * sender, void * args, Thread * owner)
+  std::pair<void *, void *> Timer::Reset(int msTime, bool repeat, EventHandler handler, void * sender, void * args, Thread * owner)
   {
-    DelayEventEntry * e = new DelayEventEntry();
-    e->time = std::chrono::steady_clock::now() + std::chrono::microseconds(msTime);
+    TimerEntry * e = new TimerEntry();
+    e->time = std::chrono::steady_clock::now() + std::chrono::milliseconds(msTime);
+    e->interval = repeat ? msTime : 0;
     e->handler = handler;
     e->sender = sender;
     e->args = args;
@@ -82,7 +83,25 @@ namespace kad
   }
 
 
-  void DelayEvent::ThreadProc()
+  std::pair<void *, void *> Timer::Reset()
+  {
+    auto result = std::make_pair<void *, void *>(nullptr, nullptr);
+
+    std::unique_lock<std::mutex> lock(this->mutex);
+
+    if (this->entry)
+    {
+      result.first = this->entry->sender;
+      result.second = this->entry->args;
+    }
+
+    this->entry.reset();
+
+    return result;
+  }
+
+
+  void Timer::ThreadProc()
   {
     while (!this->quit)
     {
@@ -96,7 +115,15 @@ namespace kad
           if (this->entry->time <= now)
           {
             Call(this->entry->handler, this->entry->sender, this->entry->args, this->entry->owner);
-            this->entry.reset();
+
+            if (this->entry->interval <= 0)
+            {
+              this->entry.reset();
+            }
+            else
+            {
+              this->entry->time = std::chrono::steady_clock::now() + std::chrono::milliseconds(this->entry->interval);
+            }
           }
           else
           {
@@ -112,7 +139,7 @@ namespace kad
   }
 
 
-  void DelayEvent::Call(EventHandler handler, void * sender, void * args, Thread * owner)
+  void Timer::Call(EventHandler handler, void * sender, void * args, Thread * owner)
   {
     if (owner)
     {

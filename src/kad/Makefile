@@ -38,7 +38,7 @@ SRCS := \
 	BufferedInputStream.cpp \
 	BufferedOutputStream.cpp \
 	Config.cpp \
-	DelayEvent.cpp \
+	Timer.cpp \
 	Digest.cpp \
 	EventLoop.cpp \
 	FindNodeAction.cpp \
@@ -75,7 +75,7 @@ PHEADERS := \
 	BufferedOutputStream.h \
 	Config.h \
 	Contact.h \
-	DelayEvent.h \
+	Timer.h \
 	Digest.h \
 	EndianUtil.h \
 	EventLoop.h \

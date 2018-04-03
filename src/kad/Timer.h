@@ -36,13 +36,14 @@
 
 namespace kad
 {
-  class DelayEvent
+  class Timer
   {
   private:
 
-    struct DelayEventEntry
+    struct TimerEntry
     {
       std::chrono::steady_clock::time_point time;
+      int interval;
       EventHandler handler;
       void * sender;
       void * args;
@@ -51,11 +52,13 @@ namespace kad
 
   public:
 
-    DelayEvent();
+    Timer();
 
-    ~DelayEvent();
+    ~Timer();
 
-    std::pair<void *, void *> Reset(int msTime, EventHandler handler, void * sender, void * args, Thread * owner);
+    std::pair<void *, void *> Reset(int msTime, bool repeat, EventHandler handler, void * sender, void * args, Thread * owner);
+
+    std::pair<void *, void *> Reset();
 
   private:
 
@@ -67,7 +70,7 @@ namespace kad
 
     std::atomic<bool> quit{false};
 
-    std::unique_ptr<DelayEventEntry> entry;
+    std::unique_ptr<TimerEntry> entry;
 
     std::thread thread;
 

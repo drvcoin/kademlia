@@ -30,7 +30,7 @@
 #include "BufferedOutputStream.h"
 #include "BufferedInputStream.h"
 #include "TransportFactory.h"
-#include "DelayEvent.h"
+#include "Timer.h"
 #include "Config.h"
 #include "PackageDispatcher.h"
 
@@ -39,7 +39,7 @@ namespace kad
   PackageDispatcher::PackageDispatcher(Thread * owner)
     : owner(owner)
   {
-    this->delay = std::unique_ptr<DelayEvent>(new DelayEvent());
+    this->timer = std::unique_ptr<Timer>(new Timer());
 
     this->transport = TransportFactory::Instance()->Create();
 
@@ -122,7 +122,7 @@ namespace kad
 
         if (first->second == id)
         {
-          _this->delay->Reset(subscription->timeout, &PackageDispatcher::OnCheckTimeout, _this, nullptr, Thread::Current());
+          _this->timer->Reset(subscription->timeout, false, &PackageDispatcher::OnCheckTimeout, _this, nullptr, Thread::Current());
         }
       }
     }
@@ -275,8 +275,9 @@ namespace kad
 
     if (first != _this->expires.end())
     {
-      _this->delay->Reset(
+      _this->timer->Reset(
         std::chrono::duration_cast<std::chrono::milliseconds>(first->first - now).count(),
+        false,
         &PackageDispatcher::OnCheckTimeout,
         _this,
         nullptr,

@@ -38,7 +38,7 @@
 
 namespace kad
 {
-  class DelayEvent;
+  class Timer;
 
   class PackageDispatcher
   {
@@ -129,7 +129,7 @@ namespace kad
 
     RequestHandler requestHandler = nullptr;
 
-    std::unique_ptr<DelayEvent> delay;
+    std::unique_ptr<Timer> timer;
 
     Thread * owner;
 
