@@ -296,42 +296,55 @@ namespace kad
       return;
     }
 
-    std::vector<std::pair<KeyPtr, ContactPtr>> nodes;
-
-    this->kBuckets->FindClosestContacts(hash, nodes);
-
-    auto action = std::unique_ptr<StoreAction>(new StoreAction(this->thread.get(), this->dispatcher.get()));
-
-    action->Initialize(nodes, hash, data);
-
-    action->SetOnCompleteHandler(
-      [hash, result, handler](void * sender, void * args)
+    this->FindNode(hash, AsyncResultPtr(new AsyncResult<std::vector<std::pair<KeyPtr, ContactPtr>>>()),
+      [this, hash, data, result, handler](AsyncResultPtr rtn)
       {
-        auto action = reinterpret_cast<StoreAction *>(args);
+        const auto & nodes = AsyncResultHelper::GetResult<std::vector<std::pair<KeyPtr, ContactPtr>>>(rtn.get());
 
-        auto rtn = dynamic_cast<AsyncResult<bool> *>(result.get());
+        auto complete = [result, handler](bool val)
+        {
+          auto storeResult = dynamic_cast<AsyncResult<bool> *>(result.get());
+          if (storeResult)
+          {
+            storeResult->Complete(val);
+          }
+          else if (result)
+          {
+            result->Complete();
+          }
 
-        if (rtn)
+          if (handler)
+          {
+            handler(result);
+          }
+        };
+
+        if (nodes.empty())
         {
-          rtn->Complete(action->GetResult());
-        }
-        else if (result)
-        {
-          result->Complete();
+          complete(false);
+          return;
         }
 
-        if (handler)
+        auto action = std::unique_ptr<StoreAction>(new StoreAction(this->thread.get(), this->dispatcher.get()));
+
+        action->Initialize(nodes, hash, data);
+
+        action->SetOnCompleteHandler(
+          [hash, complete](void * sender, void * args)
+          {
+            auto action = reinterpret_cast<StoreAction *>(args);
+
+            complete(action->GetResult());
+          },
+          this
+        );
+
+        if (action->Start())
         {
-          handler(result);
+          action.release();
         }
-      },
-      this
+      }
     );
-
-    if (action->Start())
-    {
-      action.release();
-    }
   }
 
 
