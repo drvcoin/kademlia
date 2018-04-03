@@ -1,0 +1,6 @@
+Debug
+Release
+*.sln
+.vs
+.vscode
+out/
