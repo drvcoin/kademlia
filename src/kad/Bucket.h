@@ -30,6 +30,7 @@
 #include <list>
 #include <map>
 #include <vector>
+#include <chrono>
 #include "Key.h"
 #include "Contact.h"
 
@@ -59,12 +60,21 @@ namespace kad
 
     void GetAllContacts(std::vector<std::pair<KeyPtr, ContactPtr>> & result) const;
 
+    void UpdateLookupTime();
+
     size_t Size() const     { return this->keys.size(); }
+
+    const std::chrono::steady_clock::time_point & LastLookupTime() const
+    {
+      return this->lastLookupTime;
+    }
 
   private:
 
     std::list<KeyPtr> keys;
 
     std::map<KeyPtr, Entry, KeyCompare> values;
+
+    std::chrono::steady_clock::time_point lastLookupTime;
   };
 }

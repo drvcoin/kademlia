@@ -115,4 +115,10 @@ namespace kad
       result.emplace_back(std::make_pair(value.first, value.second.contact));
     }
   }
+
+
+  void Bucket::UpdateLookupTime()
+  {
+    this->lastLookupTime = std::chrono::steady_clock::now();
+  }
 }

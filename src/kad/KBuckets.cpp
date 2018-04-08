@@ -197,4 +197,37 @@ namespace kad
 
     return 0;
   }
+
+
+  void KBuckets::UpdateLookupTime(KeyPtr key)
+  {
+    int idx = FindBucket(*key);
+
+    if (idx < 0)
+    {
+      return;
+    }
+
+    this->buckets[idx].UpdateLookupTime();
+  }
+
+
+  void KBuckets::GetRefreshTargets(const Key & base, std::chrono::steady_clock::duration expiration, std::vector<KeyPtr> & result) const
+  {
+    auto now = std::chrono::steady_clock::now();
+
+    for (size_t i = 0; i < Key::KEY_LEN_BITS; ++i)
+    {
+      if (now - this->buckets[i].LastLookupTime() > expiration)
+      {
+        Key mask = {};
+
+        mask.SetBit(i, true);
+
+        // a ^ b = c => a ^ c = b
+
+        result.emplace_back(std::make_shared<Key>(base.GetDistance(mask)));
+      }
+    }
+  }
 }

@@ -53,6 +53,8 @@ namespace kad
 
     static void SetVerbose(bool value)    { verbose = value; }
 
+    static int RefreshInterval()          { return refreshInterval; }
+
   private:
 
     static void InitKey();
@@ -68,5 +70,7 @@ namespace kad
     static TSTRING rootPath;
 
     static bool verbose;
+
+    static int refreshInterval;
   };
 }

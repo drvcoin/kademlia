@@ -43,6 +43,7 @@ namespace kad
   class KBuckets;
   class Thread;
   class PackageDispatcher;
+  class Timer;
 
   class Kademlia
   {
@@ -88,8 +89,6 @@ namespace kad
 
   private:
 
-    void OnInitRefresh(size_t idx);
-
     void OnInitPing(const std::vector<std::pair<KeyPtr, ContactPtr>> * targets, std::set<KeyPtr, KeyCompare> * validating, std::set<KeyPtr, KeyCompare> * validated);
 
     bool InitBuckets();
@@ -97,6 +96,10 @@ namespace kad
     void SaveBuckets();
 
     void RefreshBucket(size_t idx, CompleteHandler handler);
+
+    void OnRefreshTimer(void * sender, void * args);
+
+    void OnRefresh(std::vector<KeyPtr> * targets, size_t idx);
 
   private:
 
@@ -107,5 +110,7 @@ namespace kad
     std::unique_ptr<KBuckets> kBuckets;
 
     std::unique_ptr<PackageDispatcher> dispatcher;
+
+    std::unique_ptr<Timer> refreshTimer;
   };
 }

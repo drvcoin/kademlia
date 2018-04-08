@@ -37,6 +37,7 @@
 #include "PingAction.h"
 #include "Storage.h"
 #include "Config.h"
+#include "Timer.h"
 #include "Kademlia.h"
 
 namespace kad
@@ -55,6 +56,8 @@ namespace kad
     this->dispatcher->SetRequestHandler(std::bind(&Kademlia::OnRequest, this, _1, _2));
 
     this->dispatcher->SetContactHandler(std::bind(&Kademlia::OnMessage, this, _1, _2));
+
+    this->refreshTimer = std::unique_ptr<Timer>(new Timer());
   }
 
   Kademlia::~Kademlia()
@@ -155,6 +158,10 @@ namespace kad
               delete validated;
 
               this->ready = true;
+
+              using namespace std::placeholders;
+
+              this->refreshTimer->Reset(300000, true, std::bind(&Kademlia::OnRefreshTimer, this, _1, _2), this, nullptr, this->thread.get());
             }
           }
         );
@@ -162,22 +169,33 @@ namespace kad
     }
   }
 
-  void Kademlia::OnInitRefresh(size_t idx)
-  {
-    this->RefreshBucket(idx,
-      [this, idx](AsyncResultPtr result)
-      {
-        auto rtn = dynamic_cast<AsyncResult<std::vector<std::pair<KeyPtr, ContactPtr>>> *>(result.get());
 
-        if (idx < Key::KEY_LEN_BITS - 1 && rtn && rtn->GetResult().size() >= KBuckets::SizeK)
-        {
-          this->OnInitRefresh(idx + 1);
-        }
-        else
-        {
-          this->ready = true;
-        }
-      }
+  void Kademlia::OnRefreshTimer(void * sender, void * args)
+  {
+    THREAD_ENSURE(this->thread.get(), OnRefreshTimer, sender, args);
+
+    std::vector<KeyPtr> * targets = new std::vector<KeyPtr>();
+
+    this->kBuckets->GetRefreshTargets(*(Config::NodeId()), std::chrono::milliseconds(Config::RefreshInterval()), *targets);
+
+    this->OnRefresh(targets, 0);
+  }
+
+
+  void Kademlia::OnRefresh(std::vector<KeyPtr> * targets, size_t idx)
+  {
+    if (idx >= targets->size())
+    {
+      delete targets;
+      return;
+    }
+
+    this->FindNode((*targets)[idx], nullptr,
+      [this, targets, idx](AsyncResultPtr)
+      {
+        this->OnRefresh(targets, idx + 1);
+      },
+      true
     );
   }
 
@@ -201,6 +219,8 @@ namespace kad
 
       return;
     }
+
+    this->kBuckets->UpdateLookupTime(target);
 
     auto action = std::unique_ptr<FindNodeAction>(new FindNodeAction(this->thread.get(), this->dispatcher.get()));
 
@@ -251,6 +271,8 @@ namespace kad
     std::vector<std::pair<KeyPtr, ContactPtr>> nodes;
 
     this->kBuckets->FindClosestContacts(target, nodes);
+
+    this->kBuckets->UpdateLookupTime(target);
 
     auto action = std::unique_ptr<FindValueAction>(new FindValueAction(this->thread.get(), this->dispatcher.get()));
 
@@ -425,26 +447,6 @@ namespace kad
     {
       this->Ping(contact, result, handler);
     }
-  }
-
-
-  void Kademlia::RefreshBucket(size_t idx, CompleteHandler handler)
-  {
-    THREAD_ENSURE(this->thread.get(), RefreshBucket, idx, handler);
-
-    assert(idx < Key::KEY_LEN_BITS);
-
-    Key mask = {};
-
-    mask.SetBit(idx, true);
-
-    // a ^ b = c => a ^ c = b
-
-    KeyPtr target = std::make_shared<Key>(Config::NodeId()->GetDistance(mask));
-
-    auto result = AsyncResultPtr(new AsyncResult<std::vector<std::pair<KeyPtr, ContactPtr>>>());
-
-    this->FindNode(target, result, handler, true);
   }
 
 

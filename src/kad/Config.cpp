@@ -41,6 +41,8 @@ namespace kad
 
   bool Config::verbose = false;
 
+  int Config::refreshInterval = 3600000;
+
 
   void Config::Initialize(TSTRING path)
   {
