@@ -84,6 +84,19 @@ namespace kad
   }
 
 
+  bool FindValueAction::GetMissedNode(std::pair<KeyPtr, ContactPtr> & result) const
+  {
+    if (this->missed.empty())
+    {
+      return false;
+    }
+
+    result = this->missed.begin()->second;
+
+    return true;
+  }
+
+
   void FindValueAction::SendCandidate(std::pair<KeyPtr, ContactPtr> candidate)
   {
     THREAD_ENSURE(this->owner, SendCandidate, candidate);
@@ -133,6 +146,8 @@ namespace kad
         }
         else if (instr->Code() == OpCode::FIND_NODE_RESPONSE)
         {
+          this->missed[std::make_shared<Key>(this->target->GetDistance(*key))] = std::make_pair(key, request->Target());
+
           protocol::FindNodeResponse * findNodeResponse = static_cast<protocol::FindNodeResponse *>(instr);
 
           for (const auto & node : findNodeResponse->Nodes())

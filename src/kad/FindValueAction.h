@@ -50,6 +50,8 @@ namespace kad
 
     BufferPtr GetResult() const;
 
+    bool GetMissedNode(std::pair<KeyPtr, ContactPtr> & result) const;
+
   private:
 
     void SendCandidate(std::pair<KeyPtr, ContactPtr> candidate);
@@ -65,6 +67,8 @@ namespace kad
     std::set<KeyPtr, KeyCompare> validating;
 
     std::map<KeyPtr, ContactPtr, KeyCompare> validated;
+
+    std::map<KeyPtr, std::pair<KeyPtr, ContactPtr>, KeyCompare> missed;
 
     std::set<KeyPtr, KeyCompare> offline;
 

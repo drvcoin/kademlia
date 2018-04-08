@@ -279,7 +279,7 @@ namespace kad
     action->Initialize(target, nodes);
 
     action->SetOnCompleteHandler(
-      [this, result, handler](void * _sender, void * _args)
+      [this, target, result, handler](void * _sender, void * _args)
       {
         auto action = reinterpret_cast<FindValueAction *>(_args);
 
@@ -287,7 +287,27 @@ namespace kad
 
         if (rtn)
         {
-          rtn->Complete(action->GetResult());
+          auto buffer = action->GetResult();
+
+          rtn->Complete(buffer);
+
+          std::pair<KeyPtr, ContactPtr> missed;
+
+          if (action->GetMissedNode(missed))
+          {
+            std::vector<std::pair<KeyPtr, ContactPtr>> nodes;
+
+            nodes.emplace_back(std::move(missed));
+
+            auto store = std::unique_ptr<StoreAction>(new StoreAction(this->thread.get(), this->dispatcher.get()));
+
+            store->Initialize(nodes, target, buffer);
+
+            if (store->Start())
+            {
+              store.release();
+            }
+          }
         }
         else if (result)
         {
