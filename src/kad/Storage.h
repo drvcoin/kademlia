@@ -27,8 +27,11 @@
 
 #pragma once
 
+#include <map>
+#include <vector>
 #include "Key.h"
 #include "Buffer.h"
+#include "PlatformUtils.h"
 
 namespace kad
 {
@@ -36,22 +39,44 @@ namespace kad
   {
   public:
 
-    bool Save() const;
+    static Storage * Persist();
 
-    bool Load();
+    static Storage * Cache();
 
-    KeyPtr GetKey() const       { return this->key; }
+  public:
 
-    void SetKey(KeyPtr val)     { this->key = val; }
+    void Initialize(bool load);
 
-    BufferPtr GetData() const   { return this->data; }
+    bool Save(KeyPtr key, BufferPtr content, int64_t ttl = 0);
 
-    void SetData(BufferPtr val) { this->data = val; }
+    void Update(KeyPtr key, int64_t ttl = 0);
+
+    BufferPtr Load(KeyPtr key) const;
+
+    void Invalidate();
+
+    void GetExpiredKeys(std::vector<KeyPtr> & result);
 
   private:
 
-    KeyPtr key;
+    Storage(TSTRING folder);
 
-    BufferPtr data;
+  private:
+
+    static TSTRING Mkdir(const TCHAR * name);
+
+  private:
+
+    static Storage * persist;
+
+    static Storage * cache;
+
+  private:
+
+    TSTRING folder;
+
+    std::map<KeyPtr, int64_t, KeyCompare> index;
+
+    std::multimap<int64_t, KeyPtr> rindex;
   };
 }

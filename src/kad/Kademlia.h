@@ -30,6 +30,7 @@
 
 #include <memory>
 #include <set>
+#include <vector>
 #include "Key.h"
 #include "Contact.h"
 #include "Package.h"
@@ -99,7 +100,9 @@ namespace kad
 
     void OnRefreshTimer(void * sender, void * args);
 
-    void OnRefresh(std::vector<KeyPtr> * targets, size_t idx);
+    void OnRefresh(std::shared_ptr<std::vector<KeyPtr>> targets, size_t idx);
+
+    void OnReplicate(std::shared_ptr<std::vector<KeyPtr>> targets, size_t idx);
 
   private:
 

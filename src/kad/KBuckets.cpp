@@ -230,4 +230,37 @@ namespace kad
       }
     }
   }
+
+
+  size_t KBuckets::GetCloserContactCount(const Key & key) const
+  {
+    size_t result = 0;
+
+    int idx = FindBucket(key);
+
+    if (idx < 0)
+    {
+      return result;
+    }
+
+    for (size_t i = 0; i < idx; ++i)
+    {
+      result += this->buckets[i].Size();
+    }
+
+    std::vector<std::pair<KeyPtr, ContactPtr>> contacts;
+    this->buckets[idx].GetAllContacts(contacts);
+
+    Key distance = this->selfKey->GetDistance(key);
+
+    for (const auto & contact : contacts)
+    {
+      if (this->selfKey->GetDistance(*contact.first) < distance)
+      {
+        ++ result;
+      }
+    }
+
+    return result;
+  }
 }

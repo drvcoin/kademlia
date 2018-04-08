@@ -76,6 +76,9 @@ namespace kad
       return;
     }
 
+    Storage::Persist()->Initialize(true);
+    Storage::Cache()->Initialize(false);
+
     // TODO: get bootstrp nodes
 
     std::vector<std::pair<KeyPtr, ContactPtr>> nodes;
@@ -161,7 +164,14 @@ namespace kad
 
               using namespace std::placeholders;
 
-              this->refreshTimer->Reset(300000, true, std::bind(&Kademlia::OnRefreshTimer, this, _1, _2), this, nullptr, this->thread.get());
+              this->refreshTimer->Reset(
+                Config::RefreshTimerInterval(),
+                true,
+                std::bind(&Kademlia::OnRefreshTimer, this, _1, _2),
+                this,
+                nullptr,
+                this->thread.get()
+              );
             }
           }
         );
@@ -174,7 +184,7 @@ namespace kad
   {
     THREAD_ENSURE(this->thread.get(), OnRefreshTimer, sender, args);
 
-    std::vector<KeyPtr> * targets = new std::vector<KeyPtr>();
+    auto targets = std::make_shared<std::vector<KeyPtr>>();
 
     this->kBuckets->GetRefreshTargets(*(Config::NodeId()), std::chrono::milliseconds(Config::RefreshInterval()), *targets);
 
@@ -182,21 +192,81 @@ namespace kad
   }
 
 
-  void Kademlia::OnRefresh(std::vector<KeyPtr> * targets, size_t idx)
+  void Kademlia::OnRefresh(std::shared_ptr<std::vector<KeyPtr>> targets, size_t idx)
   {
-    if (idx >= targets->size())
+    if (idx < targets->size())
     {
-      delete targets;
-      return;
+      this->FindNode((*targets)[idx], nullptr,
+        [this, targets, idx](AsyncResultPtr)
+        {
+          this->OnRefresh(targets, idx + 1);
+        },
+        true
+      );
     }
+    else
+    {
+      // Refresh bucket completes. Now start to replicate old data
+      targets->clear();
 
-    this->FindNode((*targets)[idx], nullptr,
-      [this, targets, idx](AsyncResultPtr)
+      Storage::Persist()->GetExpiredKeys(*targets);
+
+      this->OnReplicate(targets, 0);
+    }
+  }
+
+
+  void Kademlia::OnReplicate(std::shared_ptr<std::vector<KeyPtr>> targets, size_t idx)
+  {
+    if (idx < targets->size())
+    {
+      bool async = false;
+
+      auto key = (*targets)[idx];
+
+      auto buffer = Storage::Persist()->Load(key);
+
+      if (buffer)
       {
-        this->OnRefresh(targets, idx + 1);
-      },
-      true
-    );
+        Storage::Persist()->Update(key);
+
+        std::vector<std::pair<KeyPtr, ContactPtr>> nodes;
+
+        this->kBuckets->FindClosestContacts(key, nodes, true);
+
+        if (nodes.size() > 0)
+        {
+          auto store = std::unique_ptr<StoreAction>(new StoreAction(this->thread.get(), this->dispatcher.get()));
+
+          store->Initialize(nodes, key, buffer, 0);
+
+          store->SetOnCompleteHandler(
+            [this, targets, idx](void * sender, void * args)
+            {
+              this->OnReplicate(targets, idx + 1);
+            },
+            this
+          );
+
+          if (store->Start())
+          {
+            store.release();
+          }
+
+          async = true;
+        }
+      }
+
+      if (!async)
+      {
+        this->OnReplicate(targets, idx + 1);
+      }
+    }
+    else
+    {
+      // Replicate completes. Clean up expired cache
+      Storage::Cache()->Invalidate();
+    }
   }
 
 
@@ -210,7 +280,10 @@ namespace kad
 
     if (nodes.empty())
     {
-      result->Complete();
+      if (result)
+      {
+        result->Complete();
+      }
 
       if (handler)
       {
@@ -301,7 +374,23 @@ namespace kad
 
             auto store = std::unique_ptr<StoreAction>(new StoreAction(this->thread.get(), this->dispatcher.get()));
 
-            store->Initialize(nodes, target, buffer);
+            auto closerCount = this->kBuckets->GetCloserContactCount(*target);
+
+            uint32_t ttl;
+
+            if (closerCount > KBuckets::SizeK)
+            {
+              ttl = Config::MinCacheTTL();
+            }
+            else
+            {
+              ttl = static_cast<uint32_t>(std::min<uint64_t>(
+                static_cast<uint64_t>(Config::MinCacheTTL()) * (1 << std::min<size_t>(32, KBuckets::SizeK / closerCount)),
+                std::numeric_limits<uint32_t>::max()
+              ));
+            }
+
+            store->Initialize(nodes, target, buffer, ttl);
 
             if (store->Start())
             {
@@ -369,7 +458,7 @@ namespace kad
 
         auto action = std::unique_ptr<StoreAction>(new StoreAction(this->thread.get(), this->dispatcher.get()));
 
-        action->Initialize(nodes, hash, data);
+        action->Initialize(nodes, hash, data, 0);
 
         action->SetOnCompleteHandler(
           [hash, complete](void * sender, void * args)
@@ -585,15 +674,18 @@ namespace kad
   {
     protocol::FindValue * reqInstr = static_cast<protocol::FindValue *>(request->GetInstruction());
 
-    Storage storage;
+    auto buffer = Storage::Persist()->Load(reqInstr->Key());
 
-    storage.SetKey(reqInstr->Key());
+    if (!buffer)
+    {
+      buffer = Storage::Cache()->Load(reqInstr->Key());
+    }
 
-    if (storage.Load())
+    if (buffer)
     {
       protocol::FindValueResponse * resInstr = new protocol::FindValueResponse();
 
-      resInstr->SetData(storage.GetData());
+      resInstr->SetData(buffer);
 
       this->dispatcher->Send(std::make_shared<Package>(Package::PackageType::Response, Config::NodeId(), request->Id(), from, std::unique_ptr<Instruction>(resInstr)));
     }
@@ -608,13 +700,16 @@ namespace kad
   {
     protocol::Store * reqInstr = static_cast<protocol::Store *>(request->GetInstruction());
 
-    Storage storage;
+    bool result;
 
-    storage.SetKey(reqInstr->GetKey());
-
-    storage.SetData(reqInstr->Data());
-
-    bool result = storage.Save();
+    if (reqInstr->TTL() > 0)
+    {
+      result = Storage::Cache()->Save(reqInstr->GetKey(), reqInstr->Data(), reqInstr->TTL());
+    }
+    else
+    {
+      result = Storage::Persist()->Save(reqInstr->GetKey(), reqInstr->Data(), Config::ReplicateTTL());
+    }
 
     protocol::StoreResponse * resInstr = new protocol::StoreResponse();
 

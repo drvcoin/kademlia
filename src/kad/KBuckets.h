@@ -61,6 +61,8 @@ namespace kad
 
     void GetRefreshTargets(const Key & base, std::chrono::steady_clock::duration expiration, std::vector<KeyPtr> & result) const;
 
+    size_t GetCloserContactCount(const Key & key) const;
+
     size_t GetBucketSize(KeyPtr key) const;
 
     size_t Size() const       { return this->size; }

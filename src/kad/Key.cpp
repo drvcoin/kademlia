@@ -173,6 +173,28 @@ namespace kad
   }
 
 
+  bool Key::FromString(const char * str)
+  {
+    if (!str || strlen(str) != KEY_LEN * 2)
+    {
+      return false;
+    }
+
+    for (size_t i = 0; i < KEY_LEN; ++i)
+    {
+      unsigned value = 0;
+      if (sscanf(str + i * 2, "%02X", &value) <= 0)
+      {
+        return false;
+      }
+
+      this->key[i] = static_cast<uint8_t>(value);
+    }
+
+    return true;
+  }
+
+
   bool Key::Serialize(IOutputStream & output) const
   {
     return output.Write(this->key, KEY_LEN) == KEY_LEN;

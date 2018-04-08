@@ -50,6 +50,8 @@ namespace kad
         return false;
       }
 
+      output.WriteUInt32(this->ttl);
+
       this->key->Serialize(output);
 
       output.WriteUInt32(this->data->Size());
@@ -69,6 +71,13 @@ namespace kad
       {
         return false;
       }
+
+      if (input.Remainder() < sizeof(uint32_t))
+      {
+        return false;
+      }
+
+      this->ttl = input.ReadUInt32();
 
       this->key = std::make_shared<Key>();
       if (!this->key->Deserialize(input))
