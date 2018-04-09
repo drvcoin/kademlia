@@ -243,7 +243,7 @@ namespace kad
       return result;
     }
 
-    for (size_t i = 0; i < idx; ++i)
+    for (int i = 0; i < idx; ++i)
     {
       result += this->buckets[i].Size();
     }
