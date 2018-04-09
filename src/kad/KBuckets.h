@@ -28,6 +28,7 @@
 #pragma once
 
 #include <vector>
+#include <chrono>
 #include "Bucket.h"
 
 namespace kad
@@ -55,6 +56,12 @@ namespace kad
     bool AddContact(KeyPtr key, ContactPtr contact);
 
     void GetAllContacts(std::vector<std::pair<KeyPtr, ContactPtr>> & result) const;
+
+    void UpdateLookupTime(KeyPtr key);
+
+    void GetRefreshTargets(const Key & base, std::chrono::steady_clock::duration expiration, std::vector<KeyPtr> & result) const;
+
+    size_t GetCloserContactCount(const Key & key) const;
 
     size_t GetBucketSize(KeyPtr key) const;
 

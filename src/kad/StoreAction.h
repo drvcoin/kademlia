@@ -42,7 +42,7 @@ namespace kad
 
     explicit StoreAction(Thread * owner, PackageDispatcher * dispatcher);
 
-    void Initialize(const std::vector<std::pair<KeyPtr, ContactPtr>> & nodes, KeyPtr key, BufferPtr data);
+    void Initialize(const std::vector<std::pair<KeyPtr, ContactPtr>> & nodes, KeyPtr key, BufferPtr data, uint32_t ttl);
 
     bool Start() override;
 
@@ -59,6 +59,8 @@ namespace kad
     KeyPtr key;
 
     BufferPtr data;
+
+    uint32_t ttl = 0;
 
     std::map<KeyPtr, ContactPtr, KeyCompare> targets;
 

@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <stdint.h>
 #include "Key.h"
 #include "Buffer.h"
 #include "Instruction.h"
@@ -55,11 +56,17 @@ namespace kad
 
       KeyPtr GetKey() const               { return this->key; }
 
+      void SetTTL(uint32_t value)         { this->ttl = value; }
+
+      uint32_t TTL() const                { return this->ttl; }
+
     private:
 
       KeyPtr key;
 
       BufferPtr data;
+
+      uint32_t ttl = 0;
     };
   }
 }

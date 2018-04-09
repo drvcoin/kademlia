@@ -39,6 +39,7 @@ namespace kad
   #define _tmkdir(s) mkdir(s, 0755)
   #define _stprintf sprintf
   #define _tstat stat
+  #define _tunlink unlink
 #endif
 
 using TSTRING = std::basic_string<TCHAR>;
@@ -64,4 +65,26 @@ inline TSTRING _TS_IMPL(std::string origin)
 
 #define UNUSED_RESULT(expr) do { auto _v = (expr); (void)_v; } while(false)
 #define UNUSED(expr) (void)(expr)
+
+
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+  #ifndef likely
+    #define likely(x) __builtin_expect(!!(x), 1)
+  #endif
+  #ifndef unlikely
+    #define unlikely(x) __builtin_expect(!!(x), 0)
+  #endif
+#else
+  #ifndef likely
+    #define likely(x) (x)
+  #endif
+  #ifndef unlikely
+    #define unlikely(x) (x)
+  #endif
+#endif
+
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 }

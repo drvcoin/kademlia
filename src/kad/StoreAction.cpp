@@ -42,7 +42,7 @@ namespace kad
   }
 
 
-  void StoreAction::Initialize(const std::vector<std::pair<KeyPtr, ContactPtr>> & nodes, KeyPtr key, BufferPtr data)
+  void StoreAction::Initialize(const std::vector<std::pair<KeyPtr, ContactPtr>> & nodes, KeyPtr key, BufferPtr data, uint32_t ttl)
   {
     for (const auto & node : nodes)
     {
@@ -51,6 +51,7 @@ namespace kad
 
     this->key = key;
     this->data = data;
+    this->ttl = ttl;
   }
 
 
@@ -89,6 +90,8 @@ namespace kad
     instr->SetKey(this->key);
 
     instr->SetData(this->data);
+
+    instr->SetTTL(this->ttl);
 
     PackagePtr package = std::make_shared<Package>(Package::PackageType::Request, Config::NodeId(), node.second, std::unique_ptr<Instruction>(instr));
 

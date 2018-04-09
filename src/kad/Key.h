@@ -73,6 +73,8 @@ namespace kad
 
     std::string ToString() const;
 
+    bool FromString(const char * str);
+
     bool Serialize(IOutputStream & output) const;
 
     bool Deserialize(IInputStream & input);
