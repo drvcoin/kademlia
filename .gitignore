@@ -4,3 +4,4 @@ Release
 .vs
 .vscode
 out/
+.clang_complete
