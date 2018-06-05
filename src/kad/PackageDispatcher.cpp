@@ -91,7 +91,7 @@ namespace kad
 
       if (!contact || !buffer)
       {
-        break;
+        continue;
       }
 
       auto args = new std::tuple<ContactPtr, uint8_t *, size_t>(contact, buffer, size);

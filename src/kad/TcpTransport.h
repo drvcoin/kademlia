@@ -27,46 +27,50 @@
 
 #pragma once
 
-#include <string.h>
-#include <memory>
 #include <string>
-#include "IOutputStream.h"
-#include "IInputStream.h"
+#include "ITransport.h"
 
 namespace kad
 {
-  struct Contact
+  class TcpTransport : public ITransport
   {
-    unsigned long addr = 0;
-    unsigned short port = 0;
+  public:
 
-    bool Serialize(IOutputStream & output) const
+    explicit TcpTransport(int reliability = 100);
+
+    ~TcpTransport() override;
+
+    void Send(ContactPtr target, const void * data, size_t len) override;
+
+    ContactPtr Receive(uint8_t ** buffer, size_t * len) override;
+
+  private:
+
+    struct Header
     {
-      output.WriteInt32(static_cast<int32_t>(addr));
-      output.WriteInt16(static_cast<int16_t>(port));
-      return true;
-    }
+      uint32_t size;
+      uint32_t addr;
+      uint16_t port;
 
-
-    bool Deserialize(IInputStream & input)
-    {
-      if (input.Remainder() < sizeof(int32_t) + sizeof(int16_t))
+      std::string ToString() const
       {
-        return false;
+        char buffer[128];
+        sprintf(buffer, "header=[%d,%08X,%d]", size, addr, port);
+        return buffer;
       }
 
-      this->addr = static_cast<unsigned long>(input.ReadInt32());
-      this->port = static_cast<unsigned short>(input.ReadInt16());
-      return true;
-    }
+    };
 
-    std::string ToString() const
-    {
-      char buffer[128];
-      sprintf(buffer, "addr=%ld.%ld.%ld.%ld port=%u", (addr & 0xFF), ((addr >> 8) & 0xFF), ((addr >> 16) & 0xFF), ((addr >> 24) & 0xFF), port);
-      return buffer;
-    }
+    int InitSocket();
+
+    int sockfd;
+
+  private:
+
+    static const std::string transportRoot;
+
+  private:
+
+    int reliability;
   };
-
-  using ContactPtr = std::shared_ptr<Contact>;
 }
