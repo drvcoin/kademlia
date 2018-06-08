@@ -171,8 +171,8 @@ namespace kad
     header.addr = self.addr;
     header.port = self.port;
 
-    write(sockfd, &header, sizeof(Header));
-    write(sockfd, buffer, size);
+    UNUSED_RESULT(write(sockfd, &header, sizeof(Header)));
+    UNUSED_RESULT(write(sockfd, buffer, size));
 
     close(sockfd);
   }
