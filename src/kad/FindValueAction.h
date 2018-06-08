@@ -50,6 +50,10 @@ namespace kad
 
     BufferPtr GetResult() const;
 
+    uint64_t Version() const;
+
+    uint32_t TTL() const;
+
     bool GetMissedNode(std::pair<KeyPtr, ContactPtr> & result) const;
 
   private:
@@ -73,5 +77,9 @@ namespace kad
     std::set<KeyPtr, KeyCompare> offline;
 
     BufferPtr result;
+
+    uint64_t version = 0;
+
+    uint32_t ttl = 0;
   };
 }

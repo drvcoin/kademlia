@@ -41,6 +41,7 @@ namespace kad
       {
         SUCCESS = 0,
         FAILED = 1,
+        OUT_OF_DATE = 2,
         __MAX__
       };
 

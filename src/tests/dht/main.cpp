@@ -61,7 +61,7 @@ public:
 };
 
 
-static void SetValue(Kademlia & controller, const std::string & keyStr, const std::string & path)
+static void SetValue(Kademlia & controller, const std::string & keyStr, const std::string & path, uint64_t version, uint32_t ttl)
 {
   sha1_t digest;
   Digest::Compute(keyStr.c_str(), keyStr.size(), digest);
@@ -102,7 +102,7 @@ static void SetValue(Kademlia & controller, const std::string & keyStr, const st
 
   auto result = AsyncResultPtr(new AsyncResult<bool>());
 
-  controller.Store(key, data, result);
+  controller.Store(key, data, ttl, version, result);
 
   result->Wait();
 
@@ -429,9 +429,22 @@ int main(int argc, char ** argv)
 
     bool handled = true;
 
-    if (words.size() == 3 && words[0] == "set")
+    if (words.size() >= 3 && words[0] == "set")
     {
-      SetValue(controller, words[1], words[2]);
+      uint64_t version = 0;
+      uint32_t ttl = (uint32_t)(-1);
+
+      if (words.size() > 3)
+      {
+        version = (uint64_t)strtoull(words[3].c_str(), nullptr, 10);
+      }
+
+      if (words.size() > 4)
+      {
+        ttl = (uint32_t)strtoul(words[4].c_str(), nullptr, 10);
+      }
+
+      SetValue(controller, words[1], words[2], version, ttl);
     }
     else if (words.size() == 2 && words[0] == "get")
     {

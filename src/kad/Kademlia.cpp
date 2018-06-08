@@ -89,7 +89,7 @@ namespace kad
     if (nodes.empty())
     {
       // This is the initial root node
-      this->ready = true;
+      this->OnInitialized();
       return;
     }
 
@@ -109,7 +109,7 @@ namespace kad
         }
         else
         {
-          this->ready = true;
+          this->OnInitialized();
         }
       }
     );
@@ -160,23 +160,29 @@ namespace kad
               delete validating;
               delete validated;
 
-              this->ready = true;
-
-              using namespace std::placeholders;
-
-              this->refreshTimer->Reset(
-                Config::RefreshTimerInterval(),
-                true,
-                std::bind(&Kademlia::OnRefreshTimer, this, _1, _2),
-                this,
-                nullptr,
-                this->thread.get()
-              );
+              this->OnInitialized();
             }
           }
         );
       }
     }
+  }
+
+
+  void Kademlia::OnInitialized()
+  {
+    this->ready = true;
+
+    using namespace std::placeholders;
+
+    this->refreshTimer->Reset(
+      Config::RefreshTimerInterval(),
+      true,
+      std::bind(&Kademlia::OnRefreshTimer, this, _1, _2),
+      this,
+      nullptr,
+      this->thread.get()
+    );
   }
 
 
@@ -209,7 +215,10 @@ namespace kad
       // Refresh bucket completes. Now start to replicate old data
       targets->clear();
 
-      Storage::Persist()->GetExpiredKeys(*targets);
+      // Remove expired persistent data since we do not need to replicate those
+      Storage::Persist()->Invalidate();
+
+      Storage::Persist()->GetIdleKeys(*targets, Config::ReplicateTTL());
 
       this->OnReplicate(targets, 0);
     }
@@ -226,10 +235,10 @@ namespace kad
 
       auto buffer = Storage::Persist()->Load(key);
 
+      Storage::Persist()->UpdateTimestamp(key);
+
       if (buffer)
       {
-        Storage::Persist()->Update(key);
-
         std::vector<std::pair<KeyPtr, ContactPtr>> nodes;
 
         this->kBuckets->FindClosestContacts(key, nodes, true);
@@ -238,22 +247,27 @@ namespace kad
         {
           auto store = std::unique_ptr<StoreAction>(new StoreAction(this->thread.get(), this->dispatcher.get()));
 
-          store->Initialize(nodes, key, buffer, 0);
-
-          store->SetOnCompleteHandler(
-            [this, targets, idx](void * sender, void * args)
-            {
-              this->OnReplicate(targets, idx + 1);
-            },
-            this
-          );
-
-          if (store->Start())
+          uint64_t version;
+          int64_t ttl;
+          if (Storage::Persist()->GetVersion(key, &version) && Storage::Persist()->GetTTL(key, &ttl))
           {
-            store.release();
-          }
+            store->Initialize(nodes, key, version, buffer, ttl, false);
 
-          async = true;
+            store->SetOnCompleteHandler(
+              [this, targets, idx](void * sender, void * args)
+              {
+                this->OnReplicate(targets, idx + 1);
+              },
+              this
+            );
+
+            if (store->Start())
+            {
+              store.release();
+            }
+
+            async = true;
+          }
         }
       }
 
@@ -341,6 +355,35 @@ namespace kad
       return;
     }
 
+    // Try to search locally first to see if we already have the knowledge of the data
+    auto buffer = Storage::Persist()->Load(target);
+    if (!buffer)
+    {
+      buffer = Storage::Cache()->Load(target);
+    }
+
+    if (buffer)
+    {
+      auto rtn = dynamic_cast<AsyncResult<BufferPtr> *>(result.get());
+      if (rtn)
+      {
+        rtn->Complete(buffer);
+      }
+      else if (result)
+      {
+        result->Complete();
+      }
+
+      if (handler)
+      {
+        handler(result);
+      }
+
+      return;
+    }
+
+    // Try to search from kademlia network
+
     std::vector<std::pair<KeyPtr, ContactPtr>> nodes;
 
     this->kBuckets->FindClosestContacts(target, nodes);
@@ -358,12 +401,19 @@ namespace kad
 
         auto rtn = dynamic_cast<AsyncResult<BufferPtr> *>(result.get());
 
+        auto buffer = action->GetResult();
+
         if (rtn)
         {
-          auto buffer = action->GetResult();
-
           rtn->Complete(buffer);
+        }
+        else if (result)
+        {
+          result->Complete();
+        }
 
+        if (buffer)
+        {
           std::pair<KeyPtr, ContactPtr> missed;
 
           if (action->GetMissedNode(missed))
@@ -374,33 +424,13 @@ namespace kad
 
             auto store = std::unique_ptr<StoreAction>(new StoreAction(this->thread.get(), this->dispatcher.get()));
 
-            auto closerCount = this->kBuckets->GetCloserContactCount(*target);
-
-            uint32_t ttl;
-
-            if (closerCount > KBuckets::SizeK)
-            {
-              ttl = Config::MinCacheTTL();
-            }
-            else
-            {
-              ttl = static_cast<uint32_t>(std::min<uint64_t>(
-                static_cast<uint64_t>(Config::MinCacheTTL()) * (1 << std::min<size_t>(32, KBuckets::SizeK / closerCount)),
-                std::numeric_limits<uint32_t>::max()
-              ));
-            }
-
-            store->Initialize(nodes, target, buffer, ttl);
+            store->Initialize(nodes, target, action->Version(), buffer, action->TTL(), false);
 
             if (store->Start())
             {
               store.release();
             }
           }
-        }
-        else if (result)
-        {
-          result->Complete();
         }
 
         if (handler)
@@ -418,9 +448,9 @@ namespace kad
   }
 
 
-  void Kademlia::Store(KeyPtr hash, BufferPtr data, AsyncResultPtr result, CompleteHandler handler)
+  void Kademlia::Store(KeyPtr hash, BufferPtr data, uint32_t ttl, uint64_t version, AsyncResultPtr result, CompleteHandler handler)
   {
-    THREAD_ENSURE(this->thread.get(), Store, hash, data, result, handler);
+    THREAD_ENSURE(this->thread.get(), Store, hash, data, ttl, version, result, handler);
 
     if (!this->ready)
     {
@@ -428,7 +458,7 @@ namespace kad
     }
 
     this->FindNode(hash, AsyncResultPtr(new AsyncResult<std::vector<std::pair<KeyPtr, ContactPtr>>>()),
-      [this, hash, data, result, handler](AsyncResultPtr rtn)
+      [this, hash, data, ttl, version, result, handler](AsyncResultPtr rtn)
       {
         const auto & nodes = AsyncResultHelper::GetResult<std::vector<std::pair<KeyPtr, ContactPtr>>>(rtn.get());
 
@@ -458,7 +488,7 @@ namespace kad
 
         auto action = std::unique_ptr<StoreAction>(new StoreAction(this->thread.get(), this->dispatcher.get()));
 
-        action->Initialize(nodes, hash, data, 0);
+        action->Initialize(nodes, hash, version, data, ttl, true);
 
         action->SetOnCompleteHandler(
           [hash, complete](void * sender, void * args)
@@ -674,18 +704,25 @@ namespace kad
   {
     protocol::FindValue * reqInstr = static_cast<protocol::FindValue *>(request->GetInstruction());
 
-    auto buffer = Storage::Persist()->Load(reqInstr->Key());
+    auto storage = Storage::Persist();
+    auto buffer = storage->Load(reqInstr->Key());
 
     if (!buffer)
     {
-      buffer = Storage::Cache()->Load(reqInstr->Key());
+      storage = Storage::Cache();
+      buffer = storage->Load(reqInstr->Key());
     }
 
-    if (buffer)
+    uint64_t version;
+    int64_t ttl;
+
+    if (buffer && storage->GetVersion(reqInstr->Key(), &version) && storage->GetTTL(reqInstr->Key(), &ttl))
     {
       protocol::FindValueResponse * resInstr = new protocol::FindValueResponse();
 
       resInstr->SetData(buffer);
+      resInstr->SetVersion(version);
+      resInstr->SetTTL(ttl);
 
       this->dispatcher->Send(std::make_shared<Package>(Package::PackageType::Response, Config::NodeId(), request->Id(), from, std::unique_ptr<Instruction>(resInstr)));
     }
@@ -700,20 +737,23 @@ namespace kad
   {
     protocol::Store * reqInstr = static_cast<protocol::Store *>(request->GetInstruction());
 
-    bool result;
+    auto storage = reqInstr->IsOriginal() ? Storage::Persist() : Storage::Cache();
 
-    if (reqInstr->TTL() > 0)
+    auto code = protocol::StoreResponse::ErrorCode::SUCCESS;
+
+    uint64_t version;
+    if (storage->GetVersion(reqInstr->GetKey(), &version) && version > reqInstr->Version())
     {
-      result = Storage::Cache()->Save(reqInstr->GetKey(), reqInstr->Data(), reqInstr->TTL());
+      code = protocol::StoreResponse::ErrorCode::OUT_OF_DATE;
     }
-    else
+    else if (!storage->Save(reqInstr->GetKey(), reqInstr->Version(), reqInstr->Data(), reqInstr->TTL()))
     {
-      result = Storage::Persist()->Save(reqInstr->GetKey(), reqInstr->Data(), Config::ReplicateTTL());
+      code = protocol::StoreResponse::ErrorCode::FAILED;
     }
 
     protocol::StoreResponse * resInstr = new protocol::StoreResponse();
 
-    resInstr->SetResult(result ? protocol::StoreResponse::ErrorCode::SUCCESS : protocol::StoreResponse::ErrorCode::FAILED);
+    resInstr->SetResult(code);
 
     this->dispatcher->Send(std::make_shared<Package>(Package::PackageType::Response, Config::NodeId(), request->Id(), from, std::unique_ptr<Instruction>(resInstr)));
   }

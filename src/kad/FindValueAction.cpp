@@ -84,6 +84,18 @@ namespace kad
   }
 
 
+  uint64_t FindValueAction::Version() const
+  {
+    return this->version;
+  }
+
+
+  uint32_t FindValueAction::TTL() const
+  {
+    return this->ttl;
+  }
+
+
   bool FindValueAction::GetMissedNode(std::pair<KeyPtr, ContactPtr> & result) const
   {
     if (this->missed.empty())
@@ -138,6 +150,10 @@ namespace kad
           protocol::FindValueResponse * findValueResponse = static_cast<protocol::FindValueResponse *>(instr);
 
           this->result = findValueResponse->Data();
+
+          this->version = findValueResponse->Version();
+
+          this->ttl = findValueResponse->TTL();
 
           if (this->result)
           {

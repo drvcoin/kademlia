@@ -56,9 +56,17 @@ namespace kad
 
       KeyPtr GetKey() const               { return this->key; }
 
+      void SetVersion(uint64_t val)       { this->version = val; }
+
+      uint64_t Version() const            { return this->version; }
+
       void SetTTL(uint32_t value)         { this->ttl = value; }
 
       uint32_t TTL() const                { return this->ttl; }
+
+      void SetOriginal(bool val)          { this->original = val; }
+
+      bool IsOriginal() const             { return this->original; }
 
     private:
 
@@ -66,7 +74,11 @@ namespace kad
 
       BufferPtr data;
 
+      uint32_t version = 0;
+
       uint32_t ttl = 0;
+
+      bool original = false;
     };
   }
 }

@@ -40,6 +40,7 @@ namespace kad
   #define _stprintf sprintf
   #define _tstat stat
   #define _tunlink unlink
+  #define _trename rename
 #endif
 
 using TSTRING = std::basic_string<TCHAR>;

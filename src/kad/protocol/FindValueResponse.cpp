@@ -51,6 +51,10 @@ namespace kad
         return false;
       }
 
+      output.WriteUInt64(this->version);
+
+      output.WriteUInt32(this->ttl);
+
       output.WriteUInt32((uint32_t)this->data->Size());
 
       if (this->data->Size() > 0 && this->data->Data())
@@ -68,6 +72,20 @@ namespace kad
       {
         return false;
       }
+
+      if (input.Remainder() < sizeof(uint64_t))
+      {
+        return false;
+      }
+
+      this->version = input.ReadUInt64();
+
+      if (input.Remainder() < sizeof(uint32_t))
+      {
+        return false;
+      }
+
+      this->ttl = input.ReadUInt32();
 
       if (input.Remainder() < sizeof(uint32_t))
       {
@@ -92,7 +110,11 @@ namespace kad
 
     void FindValueResponse::Print() const
     {
-      printf("[FIND_VALUE_RESPONSE] size=%llu\n", (long long unsigned)this->data->Size());
+      printf("[FIND_VALUE_RESPONSE] size=%llu version=%llu ttl=%lu\n",
+        (long long unsigned)this->data->Size(),
+        (long long unsigned)this->version,
+        (long unsigned)this->ttl
+      );
     }
   }
 }
