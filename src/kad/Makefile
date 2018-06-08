@@ -50,6 +50,7 @@ SRCS := \
 	KBuckets.cpp \
 	Key.cpp \
 	LinuxFileTransport.cpp \
+	TcpTransport.cpp \
 	Package.cpp \
 	PackageDispatcher.cpp \
 	PingAction.cpp \
@@ -90,6 +91,7 @@ PHEADERS := \
 	KBuckets.h \
 	Key.h \
 	LinuxFileTransport.h \
+	TcpTransport.h \
 	LockFreeQueue.h \
 	OpCode.h \
 	Package.h \

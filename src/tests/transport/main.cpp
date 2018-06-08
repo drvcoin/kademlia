@@ -39,6 +39,10 @@
 #include "PackageDispatcher.h"
 #include "TransportFactory.h"
 #include "LinuxFileTransport.h"
+#include "TcpTransport.h"
+
+#include <arpa/inet.h>
+
 
 using namespace kad;
 
@@ -49,7 +53,7 @@ public:
 
   std::unique_ptr<ITransport> Create() override
   {
-    return std::unique_ptr<ITransport>(new LinuxFileTransport(50));
+    return std::unique_ptr<ITransport>(new TcpTransport(100));
   }
 };
 
@@ -88,7 +92,8 @@ int main(int argc, char ** argv)
   }
 
   Contact self;
-  self.addr = (long)atol(argv[1]);
+
+  self.addr = (long)inet_addr(argv[1]);
   self.port = (short)atoi(argv[2]);
 
   Key key = {};
@@ -118,7 +123,7 @@ int main(int argc, char ** argv)
       if (words[0] == "send")
       {
         ContactPtr contact = std::make_shared<Contact>();
-        contact->addr = atol(words[1].c_str());
+        contact->addr = (long)inet_addr(words[1].c_str());
         contact->port = (short)atoi(words[2].c_str());
 
         PackagePtr package = std::make_shared<Package>(Package::PackageType::Request, Config::NodeId(), contact, std::unique_ptr<Instruction>(new protocol::Ping()));

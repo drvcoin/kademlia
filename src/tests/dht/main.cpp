@@ -40,8 +40,11 @@
 #include "Config.h"
 #include "TransportFactory.h"
 #include "LinuxFileTransport.h"
+#include "TcpTransport.h"
 #include "Digest.h"
 #include "Kademlia.h"
+
+#include <arpa/inet.h>
 
 
 using namespace kad;
@@ -53,7 +56,7 @@ public:
 
   std::unique_ptr<ITransport> Create() override
   {
-    return std::unique_ptr<ITransport>(new LinuxFileTransport(100));
+    return std::unique_ptr<ITransport>(new TcpTransport(100));
   }
 };
 
@@ -312,8 +315,9 @@ static void InitBuckets(const char * rootPath)
     fwrite(digest, 1, sizeof(digest), file);
 
     Contact contact;
-    contact.addr = 0;
-    contact.port = 0;
+    contact.addr = (long)inet_addr("10.1.2.244");
+    contact.port = (short) 1100;
+
     fwrite(&contact, 1, sizeof(contact), file);
 
     fclose(file);
@@ -383,8 +387,8 @@ int main(int argc, char ** argv)
   SetVerbose("on");
 
   Contact self;
-  self.addr = atol(argv[2]);
-  self.port = atol(argv[3]);
+  self.addr = (long)inet_addr(argv[2]);
+  self.port = (short)atoi(argv[3]);
 
   Config::Initialize(rootPath);
 
