@@ -50,9 +50,21 @@ namespace kad
 
       BufferPtr Data() const          { return this->data; }
 
+      void SetVersion(uint64_t val)   { this->version = val; }
+
+      uint64_t Version() const        { return this->version; }
+
+      void SetTTL(uint32_t val)       { this->ttl = val; }
+
+      uint32_t TTL() const            { return this->ttl; }
+
     private:
 
       BufferPtr data;
+
+      uint64_t version;
+
+      uint32_t ttl;
     };
   }
 }

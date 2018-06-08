@@ -60,7 +60,7 @@ namespace kad
 
     void Initialize();
 
-    void Store(KeyPtr hash, BufferPtr data, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
+    void Store(KeyPtr hash, BufferPtr data, uint32_t ttl, uint64_t version = 0, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
 
     void FindNode(KeyPtr target, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr, bool restrictBucket = false);
 
@@ -103,6 +103,8 @@ namespace kad
     void OnRefresh(std::shared_ptr<std::vector<KeyPtr>> targets, size_t idx);
 
     void OnReplicate(std::shared_ptr<std::vector<KeyPtr>> targets, size_t idx);
+
+    void OnInitialized();
 
   private:
 

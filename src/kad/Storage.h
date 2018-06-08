@@ -37,6 +37,15 @@ namespace kad
 {
   class Storage
   {
+  private:
+
+    struct Entry
+    {
+      uint64_t version;
+      int64_t timestamp;
+      int64_t expiration;
+    };
+
   public:
 
     static Storage * Persist();
@@ -47,21 +56,35 @@ namespace kad
 
     void Initialize(bool load);
 
-    bool Save(KeyPtr key, BufferPtr content, int64_t ttl = 0);
+    bool Save(KeyPtr key, uint64_t version, BufferPtr content, int64_t ttl);
 
-    void Update(KeyPtr key, int64_t ttl = 0);
+    void UpdateVersion(KeyPtr key, uint64_t version);
+
+    void UpdateTTL(KeyPtr key, int64_t ttl);
+
+    void UpdateTimestamp(KeyPtr key, int64_t timestamp = -1);
 
     BufferPtr Load(KeyPtr key) const;
 
+    bool GetVersion(KeyPtr key, uint64_t * result) const;
+
+    bool GetTTL(KeyPtr key, int64_t * result) const;
+
+    bool GetExpiration(KeyPtr key, int64_t * result) const;
+
+    bool GetTimestamp(KeyPtr key, int64_t * result) const;
+
     void Invalidate();
 
-    void GetExpiredKeys(std::vector<KeyPtr> & result);
+    void GetIdleKeys(std::vector<KeyPtr> & result, uint32_t period);
 
   private:
 
     Storage(TSTRING folder);
 
   private:
+
+    TSTRING GetFileName(KeyPtr key, uint64_t version, int64_t expiration) const;
 
     static TSTRING Mkdir(const TCHAR * name);
 
@@ -75,8 +98,10 @@ namespace kad
 
     TSTRING folder;
 
-    std::map<KeyPtr, int64_t, KeyCompare> index;
+    std::map<KeyPtr, Entry, KeyCompare> index;
 
-    std::multimap<int64_t, KeyPtr> rindex;
+    std::multimap<int64_t, KeyPtr> timestamps;
+
+    std::multimap<int64_t, KeyPtr> expirations;
   };
 }

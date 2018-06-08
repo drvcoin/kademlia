@@ -42,7 +42,7 @@ namespace kad
   }
 
 
-  void StoreAction::Initialize(const std::vector<std::pair<KeyPtr, ContactPtr>> & nodes, KeyPtr key, BufferPtr data, uint32_t ttl)
+  void StoreAction::Initialize(const std::vector<std::pair<KeyPtr, ContactPtr>> & nodes, KeyPtr key, uint64_t version, BufferPtr data, uint32_t ttl, bool original)
   {
     for (const auto & node : nodes)
     {
@@ -50,8 +50,10 @@ namespace kad
     }
 
     this->key = key;
+    this->version = version;
     this->data = data;
     this->ttl = ttl;
+    this->original = original;
   }
 
 
@@ -75,7 +77,13 @@ namespace kad
 
   bool StoreAction::GetResult() const
   {
-    return this->IsCompleted() && this->result;
+    return this->IsCompleted() && this->result && !this->outOfDate;
+  }
+
+
+  bool StoreAction::IsOutOfDate() const
+  {
+    return this->outOfDate;
   }
 
 
@@ -89,9 +97,13 @@ namespace kad
 
     instr->SetKey(this->key);
 
+    instr->SetVersion(this->version);
+
     instr->SetData(this->data);
 
     instr->SetTTL(this->ttl);
+
+    instr->SetOriginal(this->original);
 
     PackagePtr package = std::make_shared<Package>(Package::PackageType::Request, Config::NodeId(), node.second, std::unique_ptr<Instruction>(instr));
 
@@ -119,22 +131,29 @@ namespace kad
         {
           this->result = true;
         }
+        else if (res->Result() == protocol::StoreResponse::ErrorCode::OUT_OF_DATE)
+        {
+          this->outOfDate = true;
+        }
       }
     }
 
-    if (this->targets.empty())
+    if (this->targets.empty() || (this->outOfDate && this->processing.empty()))
     {
       this->Complete();
     }
 
     if (!this->IsCompleted())
     {
-      for (const auto & node : this->targets)
+      if (!this->outOfDate)
       {
-        if (this->processing.find(node.first) == this->processing.end())
+        for (const auto & node : this->targets)
         {
-          this->Send(node);
-          break;
+          if (this->processing.find(node.first) == this->processing.end())
+          {
+            this->Send(node);
+            break;
+          }
         }
       }
     }

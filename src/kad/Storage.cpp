@@ -37,6 +37,7 @@
 #include <chrono>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <limits>
 #include "Config.h"
 #include "Storage.h"
 
@@ -101,6 +102,12 @@ namespace kad
   }
 
 
+  static inline int64_t get_now()
+  {
+    return std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+  }
+
+
   void Storage::Initialize(bool load)
   {
     std::vector<std::string> names;
@@ -128,13 +135,37 @@ namespace kad
 
     if (load)
     {
+      int64_t now = get_now();
+
       for (const auto & name : names)
       {
-        KeyPtr key = std::make_shared<Key>();
+        char keyname[PATH_MAX];
+        long long expiration;
+        unsigned long long version;
 
-        if (key->FromString(name.c_str()))
+        if (sscanf(name.c_str(), "%lld-%llu-%s", &expiration, &version, keyname) == 3)
         {
-          this->Update(key, 0);
+          if (expiration < now)
+          {
+            TCHAR path[PATH_MAX];
+            _stprintf(path, _T("%s%s%s"), this->folder.c_str(), PATH_SEPERATOR_STR, _TS(name).c_str());
+            _tunlink(path);
+          }
+          else
+          {
+            KeyPtr key = std::make_shared<Key>();
+
+            if (key->FromString(keyname))
+            {
+              this->index[key] = {
+                .version = version,
+                .timestamp = 0,
+                .expiration = expiration
+              };
+              this->timestamps.emplace(0, key);
+              this->expirations.emplace(expiration, key);
+            }
+          }
         }
       }
     }
@@ -144,30 +175,111 @@ namespace kad
       {
         TCHAR path[PATH_MAX];
         _stprintf(path, _T("%s%s%s"), this->folder.c_str(), PATH_SEPERATOR_STR, _TS(name).c_str());
-
         _tunlink(path);
       }
     }
   }
 
 
-  bool Storage::Save(KeyPtr key, BufferPtr content, int64_t ttl)
+  TSTRING Storage::GetFileName(KeyPtr key, uint64_t version, int64_t expiration) const
+  {
+    TCHAR path[PATH_MAX];
+    _stprintf(path, _T("%s%s%lld-%llu-%s"),
+      this->folder.c_str(),
+      PATH_SEPERATOR_STR,
+      static_cast<long long>(expiration),
+      static_cast<unsigned long long>(version),
+      _TS(key->ToString()).c_str()
+    );
+
+    return path;
+  }
+
+
+  bool Storage::GetVersion(KeyPtr key, uint64_t * result) const
+  {
+    if (!key)
+    {
+      return false;
+    }
+
+    auto itr = this->index.find(key);
+    if (itr == this->index.end())
+    {
+      return false;
+    }
+
+    if (result)
+    {
+      *result = itr->second.version;
+    }
+
+    return true;
+  }
+
+
+  bool Storage::GetTTL(KeyPtr key, int64_t * result) const
+  {
+    if (!this->GetExpiration(key, result))
+    {
+      return false;
+    }
+
+    if (result)
+    {
+      *result = std::max<int64_t>(0, *result - get_now());
+    }
+
+    return true;
+  }
+
+
+  bool Storage::GetExpiration(KeyPtr key, int64_t * result) const
+  {
+    if (!key)
+    {
+      return false;
+    }
+
+    auto itr = this->index.find(key);
+    if (itr == this->index.end())
+    {
+      return false;
+    }
+
+    if (result)
+    {
+      *result = itr->second.expiration;
+    }
+
+    return true;
+  }
+
+
+  bool Storage::Save(KeyPtr key, uint64_t version, BufferPtr content, int64_t ttl)
   {
     if (!key || !content || !content->Data() || content->Size() == 0)
     {
       return false;
     }
 
-    this->Update(key, ttl);
+    uint64_t oldVersion;
+    if (this->GetVersion(key, &oldVersion) && oldVersion > version)
+    {
+      return false;
+    }
 
-    TCHAR path[PATH_MAX];
-    _stprintf(path, _T("%s%s%s"),
-      this->folder.c_str(),
-      PATH_SEPERATOR_STR,
-      _TS(key->ToString()).c_str()
-    );
+    this->UpdateVersion(key, version);
+    this->UpdateTTL(key, ttl);
+    this->UpdateTimestamp(key, get_now());
 
-    FILE * file = _tfopen(path, _T("wb"));
+    int64_t expiration;
+    if (!this->GetExpiration(key, &expiration))
+    {
+      return false;
+    }
+
+    FILE * file = _tfopen(this->GetFileName(key, version, expiration).c_str(), _T("wb"));
 
     if (!file)
     {
@@ -190,17 +302,22 @@ namespace kad
 
   BufferPtr Storage::Load(KeyPtr key) const
   {
-    if (!key || this->index.find(key) == this->index.end())
+    if (!key)
     {
       return nullptr;
     }
 
-    TCHAR path[PATH_MAX];
-    _stprintf(path, _T("%s%s%s"), this->folder.c_str(), PATH_SEPERATOR_STR, _TS(key->ToString()).c_str());
+    auto itr = this->index.find(key);
+    if (itr == this->index.end())
+    {
+      return nullptr;
+    }
+
+    auto path = this->GetFileName(key, itr->second.version, itr->second.expiration);
 
     struct stat stat_buf;
 
-    if (_tstat(path, &stat_buf) != 0)
+    if (_tstat(path.c_str(), &stat_buf) != 0)
     {
       return nullptr;
     }
@@ -211,7 +328,7 @@ namespace kad
 
     bool result = false;
 
-    FILE * file = _tfopen(path, _T("rb"));
+    FILE * file = _tfopen(path.c_str(), _T("rb"));
 
     if (file)
     {
@@ -234,64 +351,160 @@ namespace kad
 
   void Storage::Invalidate()
   {
-    int64_t now = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+    int64_t now = get_now();
     
-    auto start = this->rindex.begin();
+    auto start = this->expirations.begin();
     auto end = start;
 
-    for (; end != this->rindex.end() && end->first <= now; ++end)
+    for (; end != this->expirations.end() && end->first <= now; ++end)
     {
-      TCHAR path[PATH_MAX];
-      _stprintf(path, _T("%s%s%s"), this->folder.c_str(), PATH_SEPERATOR_STR, _TS(end->second->ToString()).c_str());
+      auto itr = this->index.find(end->second);
 
-      _tunlink(path);
+      if (itr != this->index.end())
+      {
+        _tunlink(this->GetFileName(itr->first, itr->second.version, itr->second.expiration).c_str());
 
-      this->index.erase(end->second);
+        auto range = this->timestamps.equal_range(itr->second.timestamp);
+        for (auto ts = range.first; ts != range.second; ++ts)
+        {
+          if ((*ts->second) == (*itr->first))
+          {
+            this->timestamps.erase(ts);
+            break;
+          }
+        }
+
+        this->index.erase(itr);
+      }
     }
 
     if (start != end)
     {
-      this->rindex.erase(start, end);
+      this->expirations.erase(start, end);
     }
   }
 
 
-  void Storage::Update(KeyPtr key, int64_t ttl)
+  void Storage::UpdateVersion(KeyPtr key, uint64_t version)
   {
-    auto now = std::chrono::steady_clock::now();
+    auto idx = this->index.find(key);
+    if (idx != this->index.end())
+    {
+      if (idx->second.version != version)
+      {
+        _trename(
+          this->GetFileName(key, idx->second.version, idx->second.expiration).c_str(),
+          this->GetFileName(key, version, idx->second.expiration).c_str()
+        );
 
-    int64_t timestamp = std::chrono::time_point_cast<std::chrono::seconds>(now).time_since_epoch().count() + ttl;
+        idx->second.version = version;
+      }
+    }
+    else
+    {
+      this->index[key] = {
+        .version = version,
+        .timestamp = 0,
+        .expiration = 0
+      };
+      this->timestamps.emplace(0, key);
+      this->expirations.emplace(0, key);
+    }
+  }
+
+
+  void Storage::UpdateTTL(KeyPtr key, int64_t ttl)
+  {
+    int64_t now = get_now();
+
+    ttl = std::min<int64_t>(ttl, std::numeric_limits<int64_t>::max() - now);
+
+    int64_t expiration = now + ttl;
 
     auto idx = this->index.find(key);
 
     if (idx != this->index.end())
     {
-      auto range = this->rindex.equal_range(idx->second);
-
-      for (auto itr = range.first; itr != range.second; ++itr)
+      if (idx->second.expiration != expiration)
       {
-        if ((*key) == (*itr->second))
+        auto range = this->expirations.equal_range(idx->second.expiration);
+        for (auto itr = range.first; itr != range.second; ++itr)
         {
-          this->rindex.erase(itr);
-          break;
+          if ((*key) == (*itr->second))
+          {
+            this->expirations.erase(itr);
+            break;
+          }
         }
+
+        _trename(
+          this->GetFileName(key, idx->second.version, idx->second.expiration).c_str(),
+          this->GetFileName(key, idx->second.version, expiration).c_str()
+        );
+
+        idx->second.expiration = expiration;
+        this->expirations.emplace(expiration, key);
       }
-
-      this->index.erase(idx);
     }
-
-    this->rindex.emplace(std::make_pair(timestamp, key));
-    this->index[key] = timestamp;
+    else
+    {
+      this->index[key] = {
+        .version = 0,
+        .timestamp = 0,
+        .expiration = expiration
+      };
+      this->timestamps.emplace(0, key);
+      this->expirations.emplace(expiration, key);
+    }
   }
 
 
-  void Storage::GetExpiredKeys(std::vector<KeyPtr> & result)
+  void Storage::UpdateTimestamp(KeyPtr key, int64_t timestamp)
   {
-    int64_t now = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
-
-    for (const auto & pair : this->rindex)
+    if (timestamp < 0)
     {
-      if (pair.first > now)
+      timestamp = get_now();
+    }
+
+    auto idx = this->index.find(key);
+    if (idx != this->index.end())
+    {
+      if (idx->second.timestamp != timestamp)
+      {
+        auto range = this->timestamps.equal_range(idx->second.timestamp);
+        for (auto itr = range.first; itr != range.second; ++itr)
+        {
+          if ((*key) == (*itr->second))
+          {
+            this->timestamps.erase(itr);
+            break;
+          }
+        }
+      }
+
+      idx->second.timestamp = timestamp;
+      this->timestamps.emplace(timestamp, key);
+    }
+    else
+    {
+      this->index[key] = {
+        .version = 0,
+        .timestamp = timestamp,
+        .expiration = 0
+      };
+      this->timestamps.emplace(timestamp, key);
+      this->expirations.emplace(0, key);
+    }
+  }
+
+
+  void Storage::GetIdleKeys(std::vector<KeyPtr> & result, uint32_t period)
+  {
+    int64_t criteria = std::max<int64_t>(0, get_now() - period);
+
+    for (const auto & pair : this->timestamps)
+    {
+      if (pair.first > criteria)
       {
         break;
       }
