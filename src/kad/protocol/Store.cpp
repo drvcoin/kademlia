@@ -50,7 +50,11 @@ namespace kad
         return false;
       }
 
+      output.WriteUInt64(this->version);
+
       output.WriteUInt32(this->ttl);
+
+      output.WriteUInt8(this->original ? 1 : 0);
 
       this->key->Serialize(output);
 
@@ -72,12 +76,26 @@ namespace kad
         return false;
       }
 
+      if (input.Remainder() < sizeof(uint64_t))
+      {
+        return false;
+      }
+
+      this->version = input.ReadUInt64();
+
       if (input.Remainder() < sizeof(uint32_t))
       {
         return false;
       }
 
       this->ttl = input.ReadUInt32();
+
+      if (input.Remainder() < sizeof(uint8_t))
+      {
+        return false;
+      }
+
+      this->original = (input.ReadUInt8() != 0);
 
       this->key = std::make_shared<Key>();
       if (!this->key->Deserialize(input))
@@ -109,7 +127,12 @@ namespace kad
 
     void Store::Print() const
     {
-      printf("[STORE] key=%s size=%llu\n", this->key->ToString().c_str(), (unsigned long long)this->data->Size());
+      printf("[STORE] key=%s size=%llu version=%llu ttl=%lu\n",
+        this->key->ToString().c_str(),
+        (unsigned long long)this->data->Size(),
+        (unsigned long long)this->version,
+        (unsigned long)this->ttl
+      );
     }
   }
 }

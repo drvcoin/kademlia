@@ -42,11 +42,13 @@ namespace kad
 
     explicit StoreAction(Thread * owner, PackageDispatcher * dispatcher);
 
-    void Initialize(const std::vector<std::pair<KeyPtr, ContactPtr>> & nodes, KeyPtr key, BufferPtr data, uint32_t ttl);
+    void Initialize(const std::vector<std::pair<KeyPtr, ContactPtr>> & nodes, KeyPtr key, uint64_t version, BufferPtr data, uint32_t ttl, bool original);
 
     bool Start() override;
 
     bool GetResult() const;
+
+    bool IsOutOfDate() const;
 
   private:
 
@@ -58,14 +60,20 @@ namespace kad
 
     KeyPtr key;
 
+    uint64_t version = 0;
+
     BufferPtr data;
 
     uint32_t ttl = 0;
+
+    bool original = false;
 
     std::map<KeyPtr, ContactPtr, KeyCompare> targets;
 
     std::set<KeyPtr, KeyCompare> processing;
 
     bool result = false;
+
+    bool outOfDate = false;
   };
 }
