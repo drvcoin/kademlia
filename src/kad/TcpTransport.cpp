@@ -130,9 +130,6 @@ namespace kad
   {
     static std::atomic<uint32_t> packageId{0};
 
-    uint8_t * buffer = new uint8_t[size];
-    memcpy(buffer, data, size);
-
     printf("TcpTransport::Send to %s\n", target->ToString().c_str());
 
 
@@ -172,7 +169,7 @@ namespace kad
     header.port = self.port;
 
     UNUSED_RESULT(write(sockfd, &header, sizeof(Header)));
-    UNUSED_RESULT(write(sockfd, buffer, size));
+    UNUSED_RESULT(write(sockfd, data, size));
 
     close(sockfd);
   }
