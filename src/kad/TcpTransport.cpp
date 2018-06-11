@@ -44,32 +44,14 @@
 #include <netinet/in.h>
 
 
-// --- temp ---
-
-#include <stdbool.h>
-#include <netdb.h>
-#include <sys/un.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#include <list>
-#include <string>
-#include <stdint.h>
-#include <stdlib.h>
-
-// --- temp ---
-
 namespace kad
 {
-  TcpTransport::TcpTransport(int reliability)
+  TcpTransport::TcpTransport()
     : ITransport()
-    , reliability(reliability)
   {
     std::srand(std::time(nullptr));
 
     InitSocket();
-
   }
 
   TcpTransport::~TcpTransport()
@@ -84,8 +66,6 @@ namespace kad
   {
     const Contact & self = Config::ContactInfo();
 
-    //printf("InitSocket %s\n", self.ToString().c_str());
-
     unsigned int port = (unsigned)self.port;
 
     int sockfd;
@@ -95,7 +75,7 @@ namespace kad
     if (sockfd < 0)
     {
       printf("ERROR opening socket\n");
-      exit(0);
+      return -1;
     }
 
     bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -104,25 +84,22 @@ namespace kad
     serv_addr.sin_port = htons(port);
 
 
-    int yes=1;
-
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
-      perror("setsockopt");
-      exit(1);
-    }
-
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
     {
       printf("ERROR on binding\n");
-      exit(0);
+      return -1;
     }
 
 
-    listen(sockfd,5);
+    if (listen(sockfd, SOMAXCONN) < 0)
+    {
+      printf("ERROR on listening\n");
+      return -1;
+    }
 
     this->sockfd = sockfd;
 
-    return sockfd;
+    return 0;
   }
 
 
@@ -130,14 +107,11 @@ namespace kad
   {
     static std::atomic<uint32_t> packageId{0};
 
+#ifdef DEBUG
     printf("TcpTransport::Send to %s\n", target->ToString().c_str());
+#endif
 
-
-    // TODO: package loss calculation
-
-
-    // TODO: separate thread
-
+    // TODO: write in separate thread
 
     int sockfd;
     struct sockaddr_in serv_addr;
@@ -146,7 +120,7 @@ namespace kad
     if (sockfd < 0)
     {
       printf("ERROR opening socket\n");
-      exit(0);
+      return;
     }
   
     bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -157,16 +131,16 @@ namespace kad
     if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
     {
       printf("ERROR connecting\n");
-      exit(0);
+      return;
     }
 
 
     const Contact & self = Config::ContactInfo();
     Header header;
 
-    header.size = size;
-    header.addr = self.addr;
-    header.port = self.port;
+    header.size = htonl(size);
+    header.addr = htonl(self.addr);
+    header.port = htons(self.port);
 
     UNUSED_RESULT(write(sockfd, &header, sizeof(Header)));
     UNUSED_RESULT(write(sockfd, data, size));
@@ -179,8 +153,6 @@ namespace kad
   {
     ContactPtr result = nullptr;
 
-    const Contact & self = Config::ContactInfo();
-
     int newsockfd;
     struct sockaddr_in cli_addr;
     int sockfd = this->sockfd;
@@ -188,19 +160,49 @@ namespace kad
   
     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 
+#ifdef DEBUG
+    const Contact & self = Config::ContactInfo();
     printf("TcpTransport::Receive on %s\n", self.ToString().c_str());
+#endif
 
     Header header;
 
     if (read(newsockfd, &header, sizeof(Header)) == sizeof(Header))
     {
-      *len = header.size;
+      *len = ntohl(header.size);
       *buffer = new uint8_t[*len];
-      if (read(newsockfd, *buffer, *len) == static_cast<ssize_t>(*len))
+
+      int readret = 0;
+      uint32_t totalread = 0;
+      uint8_t * dst = *buffer;
+
+      while(totalread < *len)
+      {
+        readret = read(newsockfd, dst, *len - totalread);
+
+        if (readret > 0)
+        {
+          dst += readret;
+          totalread += readret;
+        }
+        else if (readret < 0)
+        {
+          printf("ERROR reading\n");
+          break;
+        }
+      }
+
+      if (totalread == *len)
       {
         result = std::make_shared<Contact>();
-        result->addr = header.addr;
-        result->port = header.port;
+        result->addr = ntohl(header.addr);
+        result->port = ntohs(header.port);
+      }
+      else
+      {
+        delete[] (*buffer);
+        *buffer = nullptr;
+        *len = 0;
       }
     }
     close(newsockfd);  

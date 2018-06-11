@@ -53,7 +53,7 @@ public:
 
   std::unique_ptr<ITransport> Create() override
   {
-    return std::unique_ptr<ITransport>(new TcpTransport(100));
+    return std::unique_ptr<ITransport>(new TcpTransport());
   }
 };
 

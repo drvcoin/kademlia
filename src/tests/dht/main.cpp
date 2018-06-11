@@ -56,7 +56,7 @@ public:
 
   std::unique_ptr<ITransport> Create() override
   {
-    return std::unique_ptr<ITransport>(new TcpTransport(100));
+    return std::unique_ptr<ITransport>(new TcpTransport());
   }
 };
 
@@ -315,7 +315,7 @@ static void InitBuckets(const char * rootPath)
     fwrite(digest, 1, sizeof(digest), file);
 
     Contact contact;
-    contact.addr = (long)inet_addr("10.1.2.244");
+    contact.addr = (long)inet_addr("127.0.0.1");
     contact.port = (short) 1100;
 
     fwrite(&contact, 1, sizeof(contact), file);
