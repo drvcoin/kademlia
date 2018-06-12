@@ -36,7 +36,7 @@ namespace kad
   {
   public:
 
-    explicit TcpTransport(int reliability = 100);
+    explicit TcpTransport();
 
     ~TcpTransport() override;
 
@@ -45,9 +45,10 @@ namespace kad
     ContactPtr Receive(uint8_t ** buffer, size_t * len) override;
 
   private:
-
+#pragma pack(1)
     struct Header
     {
+
       uint32_t size;
       uint32_t addr;
       uint16_t port;
@@ -60,6 +61,7 @@ namespace kad
       }
 
     };
+#pragma pack()
 
     int InitSocket();
 
@@ -69,8 +71,5 @@ namespace kad
 
     static const std::string transportRoot;
 
-  private:
-
-    int reliability;
   };
 }
