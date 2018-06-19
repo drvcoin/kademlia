@@ -31,6 +31,8 @@
 #include <stdint.h>
 #include <openssl/sha.h>
 
+#include <string>
+
 namespace kad
 {
   typedef unsigned char sha1_t[20];
@@ -47,5 +49,6 @@ namespace kad
     static bool Compute(const void * buffer, size_t size, sha1_t digest);
     static bool Compare(const void * buffer, size_t size, sha1_t digest);
     static void Print(sha1_t digest);
+    static std::string ToString(sha1_t digest);
   };
 }

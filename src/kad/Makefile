@@ -113,7 +113,7 @@ PHEADERS := \
 	protocol/StoreResponse.h \
 
 
-CCFLAGS = -std=c++11 -I. -I$(OUT_ROOT)/include
+CCFLAGS = -std=c++11 -I. -I$(OUT_ROOT)/include -I$(ROOT)/../drive/src/jsoncpp/include
 
 SYSLIBS = -lcrypto -pthread
 

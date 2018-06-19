@@ -40,6 +40,9 @@
 #include "Timer.h"
 #include "Kademlia.h"
 
+#include <json/json.h>
+#include <arpa/inet.h>
+
 namespace kad
 {
   Kademlia::Kademlia()
@@ -70,8 +73,15 @@ namespace kad
   {
     THREAD_ENSURE(this->thread.get(), Initialize);
 
-    if (!this->InitBuckets())
+//    if (!this->InitBuckets())
+//    {
+      // TODO: error handling
+//      return;
+//    }
+
+    if (!this->InitBucketsJson())
     {
+
       // TODO: error handling
       return;
     }
@@ -796,6 +806,102 @@ namespace kad
     return true;
   }
 
+  bool Kademlia::InitBucketsJson()
+  {
+    printf("InitBucketsJson\n");
+
+    TSTRING bucketsFilePath = Config::RootPath() + _T(PATH_SEPERATOR_STR) + _T("contacts.json");
+
+    // TODO: serialize contacts
+
+    FILE * file = _tfopen(bucketsFilePath.c_str(), _T("r"));
+    if (!file)
+    {
+      bucketsFilePath = Config::RootPath() + _T(PATH_SEPERATOR_STR) + _T("default_contacts.json");
+
+      file = _tfopen(bucketsFilePath.c_str(), _T("r"));
+      if (!file)
+      {
+        return false;
+      }
+    }
+
+//    uint8_t buffer[Key::KEY_LEN + sizeof(Contact)];
+//    while (fread(buffer, 1, sizeof(buffer), file) == sizeof(buffer))
+//    {
+//      auto key = std::make_shared<Key>(buffer);
+//      auto contact = std::make_shared<Contact>(* (reinterpret_cast<Contact *>(buffer + Key::KEY_LEN)));
+// 
+//      this->kBuckets->AddContact(key, contact);
+//    }
+   
+    printf("opening file %s\n",bucketsFilePath.c_str());
+
+    size_t size = BUFSIZ;
+    char * buffer = static_cast<char *>(malloc(size));
+    size_t offset = 0;
+
+    size_t bytes;
+    while ((bytes = fread(buffer + offset, 1, size - offset, file)) == size - offset)
+    {
+      char * buf = static_cast<char *>(realloc(buffer, size + BUFSIZ));
+      if (!buf)
+      {
+        break;
+      }
+ 
+      buffer = buf;
+      offset = size;
+      size += BUFSIZ;
+    }
+
+    int len = offset + bytes;
+
+
+
+    Json::Reader reader;
+    Json::Value root;
+
+    if (!reader.parse(buffer, len, root, false) || !root.isArray())
+    {
+      printf("ERROR parsing json\n");
+      return false;
+    }
+
+    for (uint32_t i = 0; i < root.size(); i++)
+    {
+      auto keyStr = root[i]["node"];
+
+// TODO: take first endpoint
+      uint32_t j = 0;
+      auto endpoint = root[i]["endpoints"][j];
+
+      std::string ep = endpoint.asString();
+
+      auto pos = ep.find(':');
+      std::string addr = ep.substr(0,pos);
+      std::string port = ep.substr(pos+1,ep.size());
+
+      auto key = std::make_shared<Key>( keyStr.asString().c_str() );
+      auto contact = std::make_shared<Contact>();
+
+      contact->addr = (long)inet_addr(addr.c_str());
+      contact->port = (short)atoi(port.c_str());
+
+      this->kBuckets->AddContact(key, contact);
+    }
+
+
+
+    fclose(file);
+
+    if (this->kBuckets->Size() == 0)
+    {
+      printf("WARNING: no initial buckets found. This should only be used on the root node.\n");
+    }
+
+    return true;
+  }
 
   void Kademlia::SaveBuckets()
   {

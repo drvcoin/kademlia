@@ -34,11 +34,15 @@ SRCS := \
 	main.cpp
 
 
-CCFLAGS = -std=c++11 -I. -I$(OUT_ROOT)/include
+CCFLAGS = -std=c++11 -I. -I$(OUT_ROOT)/include -I$(ROOT)/../drive/src/jsoncpp/include
 
 SYSLIBS = -lcrypto -pthread
 
-LIBS = kad.a
+VPATH = $(ROOT)/../drive/out/bin
+
+LIBS = \
+       kad.a \
+       libjson.a
 
 WARNING_CLEAN = 1
 

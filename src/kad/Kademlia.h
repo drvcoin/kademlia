@@ -93,6 +93,8 @@ namespace kad
     void OnInitPing(const std::vector<std::pair<KeyPtr, ContactPtr>> * targets, std::set<KeyPtr, KeyCompare> * validating, std::set<KeyPtr, KeyCompare> * validated);
 
     bool InitBuckets();
+    bool InitBucketsJson();
+
 
     void SaveBuckets();
 
