@@ -144,6 +144,8 @@ static void Ping(Kademlia & controller, const std::string & keyStr)
 
   auto result = AsyncResultPtr(new AsyncResult<bool>());
 
+printf("pinging node='%s' key='%s'\n", keyStr.c_str(), key->ToString().c_str());
+
   controller.Ping(key, result);
 
   result->Wait();

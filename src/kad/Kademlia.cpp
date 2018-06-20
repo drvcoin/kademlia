@@ -828,15 +828,6 @@ namespace kad
       }
     }
 
-//    uint8_t buffer[Key::KEY_LEN + sizeof(Contact)];
-//    while (fread(buffer, 1, sizeof(buffer), file) == sizeof(buffer))
-//    {
-//      auto key = std::make_shared<Key>(buffer);
-//      auto contact = std::make_shared<Contact>(* (reinterpret_cast<Contact *>(buffer + Key::KEY_LEN)));
-// 
-//      this->kBuckets->AddContact(key, contact);
-//    }
-   
     printf("opening file %s\n",bucketsFilePath.c_str());
 
     size_t size = BUFSIZ;
@@ -874,7 +865,7 @@ namespace kad
     {
       auto keyStr = root[i]["node"];
 
-// TODO: take first endpoint
+// TODO: taking first endpoint, in future support multiple endpoints
       uint32_t j = 0;
       auto endpoint = root[i]["endpoints"][j];
 
