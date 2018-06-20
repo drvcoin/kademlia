@@ -72,7 +72,7 @@ namespace kad
     char buffer[40];
     for (size_t i = 0; i < sizeof(sha1_t); i++)
     {
-      sprintf(&buffer[i*2], "%02x", digest[i]);
+      sprintf(&buffer[i*2], "%02X", digest[i]);
     }
     return std::string(buffer);
   }
@@ -81,7 +81,7 @@ namespace kad
   {
     for (size_t i = 0; i < sizeof(sha1_t); i++)
     {
-      printf("%02x", digest[i]);
+      printf("%02X", digest[i]);
     }
     printf("\n");
   }

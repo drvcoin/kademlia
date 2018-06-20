@@ -268,6 +268,10 @@ static void PrintNodes(Kademlia & controller)
   controller.PrintNodes();
 }
 
+static void SaveBuckets(Kademlia & controller)
+{
+  controller.SaveBucketsJson();
+}
 
 static void InitKey(const char * rootPath)
 {
@@ -282,6 +286,15 @@ static void InitKey(const char * rootPath)
   {
     fwrite(key->Buffer(), 1, Key::KEY_LEN, file);
     fclose(file);
+  }
+
+  // save copy as clear text
+  FILE * f2 = fopen((std::string(rootPath) + "/key.txt").c_str(), "w");
+
+  if (f2)
+  {
+    fwrite(key->ToString().c_str(), 1, 40, f2);
+    fclose(f2);
   }
 }
 
@@ -329,6 +342,9 @@ static void InitBuckets(const char * rootPath)
 
 static void InitBucketsJson(const char * rootPath)
 {
+  printf("InitBucketsJson DISABLED\n");
+  return;
+
   std::string bucketsPath = std::string(rootPath) + "/contacts.json";
 
   FILE * file = fopen(bucketsPath.c_str(), "r");
@@ -529,6 +545,10 @@ int main(int argc, char ** argv)
     else if (words.size() == 1 && words[0] == "print")
     {
       PrintNodes(controller);
+    }
+    else if (words.size() == 1 && words[0] == "save")
+    {
+      SaveBuckets(controller);
     }
     else if (words.size() != 0)
     {

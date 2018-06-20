@@ -95,8 +95,10 @@ namespace kad
     bool InitBuckets();
     bool InitBucketsJson();
 
-
+public:
     void SaveBuckets();
+    void SaveBucketsJson();
+private:
 
     void RefreshBucket(size_t idx, CompleteHandler handler);
 

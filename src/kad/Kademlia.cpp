@@ -66,6 +66,7 @@ namespace kad
   Kademlia::~Kademlia()
   {
     this->SaveBuckets();
+    this->SaveBucketsJson();
   }
 
 
@@ -822,6 +823,7 @@ namespace kad
       file = _tfopen(bucketsFilePath.c_str(), _T("r"));
       if (!file)
       {
+        printf("Missing both contacts.json and default_contacts.json\n");
         return false;
       }
     }
@@ -891,8 +893,6 @@ namespace kad
       this->kBuckets->AddContact(key, contact);
     }
 
-
-
     fclose(file);
 
     if (this->kBuckets->Size() == 0)
@@ -905,6 +905,8 @@ namespace kad
 
   void Kademlia::SaveBuckets()
   {
+  printf("SaveBuckets\n");
+
     TSTRING bucketsFilePath = Config::RootPath() + _T(PATH_SEPERATOR_STR) + _T("contacts");
 
     FILE * file = _tfopen(bucketsFilePath.c_str(), _T("r"));
@@ -925,6 +927,41 @@ namespace kad
     }
   }
 
+  void Kademlia::SaveBucketsJson()
+  {
+  printf("SaveBucketsJson\n");
+
+
+    TSTRING bucketsFilePath = Config::RootPath() + _T(PATH_SEPERATOR_STR) + _T("contacts.json");
+
+    FILE * file = _tfopen(bucketsFilePath.c_str(), _T("w"));
+
+    if (file)
+    {
+      std::vector<std::pair<KeyPtr, ContactPtr>> entries;
+
+      this->kBuckets->GetAllContacts(entries);
+
+      Json::Value root;
+
+      for (const auto & entry : entries)
+      {
+        Json::Value node;
+        node["node"] = entry.first->ToString();
+        node["endpoints"].append(entry.second->ToString());
+
+        root.append(node);
+      }
+
+      Json::StyledWriter jw;
+
+      std::string json = jw.write(root);
+      printf("%s\n", json.c_str());
+      fwrite(json.c_str(), 1, json.size(), file);
+
+      fclose(file);
+    }
+  }
 
   void Kademlia::PrintNodes() const
   {
