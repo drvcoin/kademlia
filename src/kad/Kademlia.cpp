@@ -232,6 +232,8 @@ namespace kad
       Storage::Persist()->GetIdleKeys(*targets, Config::ReplicateTTL());
 
       this->OnReplicate(targets, 0);
+
+      SaveBucketsJson();
     }
   }
 
