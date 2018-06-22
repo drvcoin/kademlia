@@ -272,7 +272,7 @@ static void PrintNodes(Kademlia & controller)
 
 static void SaveBuckets(Kademlia & controller)
 {
-  controller.SaveBucketsJson();
+  controller.SaveBuckets();
 }
 
 static void InitKey(const char * rootPath)
@@ -301,111 +301,11 @@ static void InitKey(const char * rootPath)
 }
 
 
-static void InitBuckets(const char * rootPath)
-{
-  printf("InitBuckets DISABLED\n");
-  return;
-
-  std::string bucketsPath = std::string(rootPath) + "/contacts";
-
-  FILE * file = fopen(bucketsPath.c_str(), "r");
-
-  if (file)
-  {
-    fseek(file, 0, SEEK_END);
-    long size = ftell(file);
-    fclose(file);
-
-    if (size > 0)
-    {
-      return;
-    }
-  }
-
-  file = fopen(bucketsPath.c_str(), "w");
-
-  if (file)
-  {
-    sha1_t digest;
-
-    Digest::Compute("root", sizeof("root") - 1, digest);
-
-    fwrite(digest, 1, sizeof(digest), file);
-
-    Contact contact;
-    contact.addr = (long)inet_addr("127.0.0.1");
-    contact.port = (short) 1100;
-
-    fwrite(&contact, 1, sizeof(contact), file);
-
-    fclose(file);
-  }
-}
-
-static void InitBucketsJson(const char * rootPath)
-{
-  printf("InitBucketsJson DISABLED\n");
-  return;
-
-  std::string bucketsPath = std::string(rootPath) + "/contacts.json";
-
-  FILE * file = fopen(bucketsPath.c_str(), "r");
-
-  if (file)
-  {
-    fseek(file, 0, SEEK_END);
-    long size = ftell(file);
-    fclose(file);
-
-    if (size > 0)
-    {
-      return;
-    }
-  }
-
-  file = fopen(bucketsPath.c_str(), "w");
-
-  if (file)
-  {
-    sha1_t digest;
-
-    Digest::Compute("root", sizeof("root") - 1, digest);
-
-//    fwrite(digest, 1, sizeof(digest), file);
-
-    Contact contact;
-    contact.addr = (long)inet_addr("127.0.0.1");
-    contact.port = (short) 1100;
-
-//    fwrite(&contact, 1, sizeof(contact), file);
-
-    Json::Value root;
-
-    Json::Value node;
-    node["node"] = Digest::ToString(digest);
-    node["endpoints"].append(contact.ToString());
-
-    root.append(node);
-
-    Json::StyledWriter jw;
-
-    std::string json = jw.write(root);
-    printf("%s\n", json.c_str());
-    fwrite(json.c_str(), 1, json.size(), file);
-
-    fclose(file);
-  }
-}
-
-
 static void Initialize(const char * rootPath)
 {
   mkdir(rootPath, 0755);
 
   InitKey(rootPath);
-
-  InitBuckets(rootPath);
-  InitBucketsJson(rootPath);
 }
 
 

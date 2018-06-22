@@ -74,6 +74,8 @@ namespace kad
 
     void PrintNodes() const;
 
+    void SaveBuckets();
+
   private:
 
     void OnMessage(KeyPtr fromKey, ContactPtr fromContact);
@@ -93,12 +95,6 @@ namespace kad
     void OnInitPing(const std::vector<std::pair<KeyPtr, ContactPtr>> * targets, std::set<KeyPtr, KeyCompare> * validating, std::set<KeyPtr, KeyCompare> * validated);
 
     bool InitBuckets();
-    bool InitBucketsJson();
-
-public:
-    void SaveBuckets();
-    void SaveBucketsJson();
-private:
 
     void RefreshBucket(size_t idx, CompleteHandler handler);
 

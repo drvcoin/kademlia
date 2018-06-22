@@ -66,7 +66,6 @@ namespace kad
   Kademlia::~Kademlia()
   {
     this->SaveBuckets();
-    this->SaveBucketsJson();
   }
 
 
@@ -74,23 +73,14 @@ namespace kad
   {
     THREAD_ENSURE(this->thread.get(), Initialize);
 
-//    if (!this->InitBuckets())
-//    {
-      // TODO: error handling
-//      return;
-//    }
-
-    if (!this->InitBucketsJson())
+    if (!this->InitBuckets())
     {
-
       // TODO: error handling
       return;
     }
 
     Storage::Persist()->Initialize(true);
     Storage::Cache()->Initialize(false);
-
-    // TODO: get bootstrp nodes
 
     std::vector<std::pair<KeyPtr, ContactPtr>> nodes;
 
@@ -233,7 +223,7 @@ namespace kad
 
       this->OnReplicate(targets, 0);
 
-      SaveBucketsJson();
+      SaveBuckets();
     }
   }
 
@@ -774,45 +764,6 @@ namespace kad
 
   bool Kademlia::InitBuckets()
   {
-    TSTRING bucketsFilePath = Config::RootPath() + _T(PATH_SEPERATOR_STR) + _T("contacts");
-
-    // TODO: serialize contacts
-    uint8_t buffer[Key::KEY_LEN + sizeof(Contact)];
-
-    FILE * file = _tfopen(bucketsFilePath.c_str(), _T("r"));
-    if (!file)
-    {
-      bucketsFilePath = Config::RootPath() + _T(PATH_SEPERATOR_STR) + _T("default_contacts");
-
-      file = _tfopen(bucketsFilePath.c_str(), _T("r"));
-      if (!file)
-      {
-        return false;
-      }
-    }
-
-    while (fread(buffer, 1, sizeof(buffer), file) == sizeof(buffer))
-    {
-      auto key = std::make_shared<Key>(buffer);
-      auto contact = std::make_shared<Contact>(* (reinterpret_cast<Contact *>(buffer + Key::KEY_LEN)));
-
-      this->kBuckets->AddContact(key, contact);
-    }
-
-    fclose(file);
-
-    if (this->kBuckets->Size() == 0)
-    {
-      printf("WARNING: no initial buckets found. This should only be used on the root node.\n");
-    }
-
-    return true;
-  }
-
-  bool Kademlia::InitBucketsJson()
-  {
-    printf("InitBucketsJson\n");
-
     TSTRING bucketsFilePath = Config::RootPath() + _T(PATH_SEPERATOR_STR) + _T("contacts.json");
 
     // TODO: serialize contacts
@@ -896,35 +847,9 @@ namespace kad
     return true;
   }
 
+
   void Kademlia::SaveBuckets()
   {
-  printf("SaveBuckets\n");
-
-    TSTRING bucketsFilePath = Config::RootPath() + _T(PATH_SEPERATOR_STR) + _T("contacts");
-
-    FILE * file = _tfopen(bucketsFilePath.c_str(), _T("r"));
-
-    if (file)
-    {
-      std::vector<std::pair<KeyPtr, ContactPtr>> entries;
-
-      this->kBuckets->GetAllContacts(entries);
-
-      for (const auto & entry : entries)
-      {
-        fwrite(entry.first->Buffer(), 1, Key::KEY_LEN, file);
-        fwrite(entry.second.get(), 1, sizeof(Contact), file);
-      }      
-
-      fclose(file);
-    }
-  }
-
-  void Kademlia::SaveBucketsJson()
-  {
-  printf("SaveBucketsJson\n");
-
-
     TSTRING bucketsFilePath = Config::RootPath() + _T(PATH_SEPERATOR_STR) + _T("contacts.json");
 
     FILE * file = _tfopen(bucketsFilePath.c_str(), _T("w"));
