@@ -31,6 +31,7 @@
 #include <memory>
 #include <set>
 #include <vector>
+#include <functional>
 #include "Key.h"
 #include "Contact.h"
 #include "Package.h"
