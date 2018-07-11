@@ -185,7 +185,7 @@ namespace kad
           dst += readret;
           totalread += readret;
         }
-        else if (readret < 0)
+        else if (readret <= 0)
         {
           printf("ERROR reading\n");
           break;
