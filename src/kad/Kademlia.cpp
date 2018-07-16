@@ -1,19 +1,19 @@
 /**
  *
  * MIT License
- * 
+ *
  * Copyright (c) 2018 drvcoin
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- * 
+ *
  * =============================================================================
  */
 
@@ -33,6 +33,7 @@
 #include "PackageDispatcher.h"
 #include "FindNodeAction.h"
 #include "FindValueAction.h"
+#include "QueryAction.h"
 #include "StoreAction.h"
 #include "PingAction.h"
 #include "Storage.h"
@@ -320,7 +321,7 @@ namespace kad
       [this, result, handler](void * _sender, void * _args)
       {
         auto action = reinterpret_cast<FindNodeAction *>(_args);
-        
+
         auto rtn = dynamic_cast<AsyncResult<std::vector<std::pair<KeyPtr, ContactPtr>>> *>(result.get());
 
         if (rtn)
@@ -451,9 +452,132 @@ namespace kad
   }
 
 
+  void Kademlia::Query(KeyPtr target, std::string query, AsyncResultPtr result, CompleteHandler handler)
+  {
+    THREAD_ENSURE(this->thread.get(), Query, target, query, result, handler);
+printf("Kademlia::Query (target:%s)\n", target->ToString().c_str());
+
+    if (!this->ready)
+    {
+      return;
+    }
+
+printf("(Query) STORAGE::Load: query = %s\n", query.c_str());
+
+    auto storage = Storage::Persist();
+    auto buffer = storage->MatchQuery(query);
+
+
+printf("Query: Not found locally, searching in network...\n");
+
+    std::vector<std::pair<KeyPtr, ContactPtr>> nodes;
+
+    this->kBuckets->GetAllContacts(nodes);
+
+    auto action = std::unique_ptr<QueryAction>(new QueryAction(this->thread.get(), this->dispatcher.get()));
+
+    action->Initialize(target, query, nodes);
+
+    action->SetOnCompleteHandler(
+      [this, target, result, handler](void * _sender, void * _args)
+      {
+
+printf("QUERY:Callback\n");
+
+        auto action = reinterpret_cast<QueryAction *>(_args);
+
+        auto rtn = dynamic_cast<AsyncResult<BufferPtr> *>(result.get());
+
+        auto buffer = action->GetResult();
+
+        if (rtn)
+        {
+          rtn->Complete(buffer);
+        }
+        else if (result)
+        {
+          result->Complete();
+        }
+
+        if (handler)
+        {
+          handler(result);
+        }
+      },
+      this
+    );
+
+    if (action->Start())
+    {
+      action.release();
+    }
+  }
+
+
   void Kademlia::Store(KeyPtr hash, BufferPtr data, uint32_t ttl, uint64_t version, AsyncResultPtr result, CompleteHandler handler)
   {
     THREAD_ENSURE(this->thread.get(), Store, hash, data, ttl, version, result, handler);
+
+    if (!this->ready)
+    {
+      return;
+    }
+
+    this->FindNode(hash, AsyncResultPtr(new AsyncResult<std::vector<std::pair<KeyPtr, ContactPtr>>>()),
+      [this, hash, data, ttl, version, result, handler](AsyncResultPtr rtn)
+      {
+        const auto & nodes = AsyncResultHelper::GetResult<std::vector<std::pair<KeyPtr, ContactPtr>>>(rtn.get());
+
+        auto complete = [result, handler](bool val)
+        {
+          auto storeResult = dynamic_cast<AsyncResult<bool> *>(result.get());
+          if (storeResult)
+          {
+            storeResult->Complete(val);
+          }
+          else if (result)
+          {
+            result->Complete();
+          }
+
+          if (handler)
+          {
+            handler(result);
+          }
+        };
+
+        if (nodes.empty())
+        {
+          complete(false);
+          return;
+        }
+
+        auto action = std::unique_ptr<StoreAction>(new StoreAction(this->thread.get(), this->dispatcher.get()));
+
+        action->Initialize(nodes, hash, version, data, ttl, true);
+
+        action->SetOnCompleteHandler(
+          [hash, complete](void * sender, void * args)
+          {
+            auto action = reinterpret_cast<StoreAction *>(args);
+
+            complete(action->GetResult());
+          },
+          this
+        );
+
+        if (action->Start())
+        {
+          action.release();
+        }
+      }
+    );
+  }
+
+
+  void Kademlia::Publish(KeyPtr hash, BufferPtr data, uint32_t ttl, uint64_t version, AsyncResultPtr result, CompleteHandler handler)
+  {
+    THREAD_ENSURE(this->thread.get(), Publish, hash, data, ttl, version, result, handler);
 
     if (!this->ready)
     {
@@ -635,7 +759,10 @@ namespace kad
   {
     THREAD_ENSURE(this->thread.get(), OnRequest, from, request);
 
+
     Instruction * instr = request->GetInstruction();
+
+printf("OnRequest OpCode %d\n",(int)instr->Code());
 
     switch (instr->Code())
     {
@@ -657,6 +784,12 @@ namespace kad
         break;
       }
 
+      case OpCode::QUERY:
+      {
+        this->OnRequestQuery(from, request);
+        break;
+      }
+
       case OpCode::STORE:
       {
         this->OnRequestStore(from, request);
@@ -672,6 +805,7 @@ namespace kad
 
   void Kademlia::OnRequestPing(ContactPtr from, PackagePtr request)
   {
+    printf("OnRequestPing\n");
     this->dispatcher->Send(std::make_shared<Package>(
       Package::PackageType::Response,
       Config::NodeId(),
@@ -684,18 +818,29 @@ namespace kad
 
   void Kademlia::OnRequestFindNode(ContactPtr from, PackagePtr request)
   {
+printf("OnRequestFindNode\n");
+
     protocol::FindNode * reqInstr = static_cast<protocol::FindNode *>(request->GetInstruction());
 
     auto target = reqInstr->Key();
 
     std::vector<std::pair<KeyPtr, ContactPtr>> result;
 
-    this->kBuckets->FindClosestContacts(target, result);
+    if (target)
+    {
+      this->kBuckets->FindClosestContacts(target, result);
+    }
+    else
+    {
+      this->kBuckets->GetAllContacts(result);
+    }
 
     protocol::FindNodeResponse * resInstr = new protocol::FindNodeResponse();
 
+    printf("GetAllContacts: total %lu contacts\n",result.size());
     for (const auto & node : result)
     {
+      printf("key: %s contact: %s\n", node.first->ToString().c_str(), node.second->ToString().c_str());
       resInstr->AddNode(node.first, node.second);
     }
 
@@ -731,6 +876,40 @@ namespace kad
     }
     else
     {
+      this->OnRequestFindNode(from, request);
+    }
+  }
+
+
+  void Kademlia::OnRequestQuery(ContactPtr from, PackagePtr request)
+  {
+printf("OnRequestQUERY\n");
+
+    protocol::Query * reqInstr = static_cast<protocol::Query *>(request->GetInstruction());
+
+printf("Kademlia::OnRequestQuery: query: '%s'\n",reqInstr->query.c_str());
+
+    auto storage = Storage::Persist();
+    auto buffer = storage->MatchQuery(reqInstr->query);
+
+
+    uint64_t version = 1;
+    int64_t ttl = 999;
+
+    if (buffer)
+    {
+printf("QueryResponse: return value\n");
+      protocol::QueryResponse * resInstr = new protocol::QueryResponse();
+
+      resInstr->SetData(buffer);
+      resInstr->SetVersion(version);
+      resInstr->SetTTL(ttl);
+
+      this->dispatcher->Send(std::make_shared<Package>(Package::PackageType::Response, Config::NodeId(), request->Id(), from, std::unique_ptr<Instruction>(resInstr)));
+    }
+    else
+    {
+printf("OnRequestFindNode\n");
       this->OnRequestFindNode(from, request);
     }
   }
@@ -795,7 +974,7 @@ namespace kad
       {
         break;
       }
- 
+
       buffer = buf;
       offset = size;
       size += BUFSIZ;
@@ -816,7 +995,7 @@ namespace kad
 
     for (uint32_t i = 0; i < root.size(); i++)
     {
-      auto keyStr = root[i]["node"];
+      std::string keyStr = root[i]["node"].asString();
 
 // TODO: taking first endpoint, in future support multiple endpoints
       uint32_t j = 0;
@@ -828,9 +1007,10 @@ namespace kad
       std::string addr = ep.substr(0,pos);
       std::string port = ep.substr(pos+1,ep.size());
 
-      auto key = std::make_shared<Key>( keyStr.asString().c_str() );
-      auto contact = std::make_shared<Contact>();
+      auto key = std::make_shared<Key>();
+      key->FromString(keyStr.c_str());
 
+      auto contact = std::make_shared<Contact>();
       contact->addr = (long)inet_addr(addr.c_str());
       contact->port = (short)atoi(port.c_str());
 
@@ -903,6 +1083,6 @@ namespace kad
     }
 
     printf("], \"count\":%llu }\n", (long long unsigned)nodes.size());
-    
+
   }
 }

@@ -1,18 +1,18 @@
-# 
+#
 # MIT License
-# 
+#
 # Copyright (c) 2018 drvcoin
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -20,9 +20,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-# 
+#
 # =============================================================================
-# 
+#
 
 ROOT=$(realpath ../..)
 
@@ -43,6 +43,7 @@ SRCS := \
 	EventLoop.cpp \
 	FindNodeAction.cpp \
 	FindValueAction.cpp \
+        QueryAction.cpp \
 	IInputStream.cpp \
 	InstructionSerializer.cpp \
 	IOutputStream.cpp \
@@ -66,6 +67,8 @@ SRCS := \
 	protocol/Pong.cpp \
 	protocol/Store.cpp \
 	protocol/StoreResponse.cpp \
+        protocol/Query.cpp \
+        protocol/QueryResponse.cpp \
 
 PHEADERS := \
 	Action.h \
@@ -82,6 +85,7 @@ PHEADERS := \
 	EventLoop.h \
 	FindNodeAction.h \
 	FindValueAction.h \
+        QueryAction.h \
 	IInputStream.h \
 	Instruction.h \
 	InstructionSerializer.h \
@@ -111,6 +115,8 @@ PHEADERS := \
 	protocol/Protocol.h \
 	protocol/Store.h \
 	protocol/StoreResponse.h \
+        protocol/Query.h \
+        protocol/QueryResponse.h \
 
 
 CCFLAGS = -std=c++11 -I. -I$(OUT_ROOT)/include -I$(ROOT)/../drive/src/jsoncpp/include

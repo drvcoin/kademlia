@@ -1,19 +1,19 @@
 /**
  *
  * MIT License
- * 
+ *
  * Copyright (c) 2018 drvcoin
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- * 
+ *
  * =============================================================================
  */
 
@@ -130,7 +130,84 @@ static void GetValue(Kademlia & controller, const std::string & keyStr)
 
   if (buffer && buffer->Size() > 0)
   {
-    printf("%s\n", std::string(reinterpret_cast<const char *>(buffer->Data()), buffer->Size()).c_str());
+    printf("RESULT: %s\n", std::string(reinterpret_cast<const char *>(buffer->Data()), buffer->Size()).c_str());
+  }
+}
+
+
+static void Publish(Kademlia & controller, const std::string & path)
+{
+  uint8_t * buffer = nullptr;
+  size_t size = 0;
+
+  FILE * file = fopen(path.c_str(), "r");
+
+  if (file)
+  {
+    fseek(file, 0, SEEK_END);
+
+    size = static_cast<size_t>(std::max<long>(0, ftell(file)));
+
+    if (size > 0)
+    {
+      rewind(file);
+
+      buffer = new uint8_t[size];
+
+      UNUSED_RESULT(fread(buffer, 1, size, file));
+    }
+
+    fclose(file);
+  }
+
+  if (size == 0)
+  {
+    printf("ERROR: file not found or empty.\n");
+    return;
+  }
+
+  char * d = (char*)buffer;
+  printf("buffer: %s\n", d);
+  sha1_t dig;
+  Digest::Compute(d, size, dig);
+  Digest::Print(dig);
+
+  KeyPtr key = std::make_shared<Key>(dig);
+
+  auto data = std::make_shared<Buffer>(buffer, size, false, true);
+
+  auto result = AsyncResultPtr(new AsyncResult<bool>());
+
+  controller.Publish(key, data, 999, 1, result);
+
+  result->Wait();
+
+  if (!AsyncResultHelper::GetResult<bool>(result.get()))
+  {
+    printf("ERROR: failed to set value.\n");
+  }
+}
+
+
+static void Query(Kademlia & controller, const std::string & query)
+{
+  sha1_t digest;
+  Digest::Compute(query.c_str(), query.size(), digest);
+  Digest::Print(digest);
+
+  KeyPtr key = std::make_shared<Key>(digest);
+
+  auto result = AsyncResultPtr(new  AsyncResult<BufferPtr>());
+
+  controller.Query(key, query, result);
+
+  result->Wait();
+
+  auto buffer = AsyncResultHelper::GetResult<BufferPtr>(result.get());
+
+  if (buffer && buffer->Size() > 0)
+  {
+    printf("RESULT: %s\n", std::string(reinterpret_cast<const char *>(buffer->Data()), buffer->Size()).c_str());
   }
 }
 
@@ -423,6 +500,14 @@ int main(int argc, char ** argv)
     else if (words.size() == 2 && words[0] == "get")
     {
       GetValue(controller, words[1]);
+    }
+    else if (words.size() == 2 && words[0] == "publish")
+    {
+      Publish(controller, words[1]);
+    }
+    else if (words.size() == 2 && words[0] == "query")
+    {
+      Query(controller, words[1]);
     }
     else if (words.size() == 2 && words[0] == "ping")
     {

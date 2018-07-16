@@ -25,22 +25,50 @@
  * =============================================================================
  */
 
-#pragma once
+#include <stdio.h>
+#include "protocol/Query.h"
 
 namespace kad
 {
-  enum class OpCode
+  namespace protocol
   {
-    PING = 1,
-    PONG = 2,
-    STORE = 3,
-    STORE_RESPONSE = 4,
-    FIND_NODE = 5,
-    FIND_NODE_RESPONSE = 6,
-    FIND_VALUE = 7,
-    FIND_VALUE_RESPONSE = 8,
-    QUERY = 9,
-    QUERY_RESPONSE = 10,
-    __MAX__
-  };
+    Query::Query()
+    {
+      this->code = OpCode::QUERY;
+    }
+
+    bool Query::Serialize(IOutputStream & output) const
+    {
+printf("Query::Serialize\n");
+
+      bool r = FindNode::Serialize(output);
+
+      printf("serialize: %s\n", this->query.c_str());
+      std::string q(this->query);
+      output.WriteString(q);
+
+      return r;
+    }
+
+
+    bool Query::Deserialize(IInputStream & input)
+    {
+printf("Query::Deserialize\n");
+
+      bool r = FindNode::Deserialize(input);
+
+
+      std::string q;
+      input.ReadString(q);
+      printf("deserialize: %s\n", q.c_str());
+      this->query = q;
+
+      return r;
+    }
+
+    void Query::Print() const
+    {
+      printf("[QUERY] key=%s\n", this->Key()->ToString().c_str());
+    }
+  }
 }
