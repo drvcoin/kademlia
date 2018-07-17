@@ -62,8 +62,8 @@ namespace kad
 
     std::string ToString() const
     {
-      char buffer[128];
-      sprintf(buffer, "addr=%ld.%ld.%ld.%ld port=%u", (addr & 0xFF), ((addr >> 8) & 0xFF), ((addr >> 16) & 0xFF), ((addr >> 24) & 0xFF), port);
+      char buffer[32];
+      sprintf(buffer, "%ld.%ld.%ld.%ld:%u", (addr & 0xFF), ((addr >> 8) & 0xFF), ((addr >> 16) & 0xFF), ((addr >> 24) & 0xFF), port);
       return buffer;
     }
   };

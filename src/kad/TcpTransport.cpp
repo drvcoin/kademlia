@@ -190,6 +190,10 @@ namespace kad
           printf("ERROR reading\n");
           break;
         }
+        else
+        {
+          break;
+        }
       }
 
       if (totalread == *len)

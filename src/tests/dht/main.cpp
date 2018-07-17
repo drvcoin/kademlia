@@ -45,7 +45,7 @@
 #include "Kademlia.h"
 
 #include <arpa/inet.h>
-
+#include <json/json.h>
 
 using namespace kad;
 
@@ -143,6 +143,8 @@ static void Ping(Kademlia & controller, const std::string & keyStr)
   KeyPtr key = std::make_shared<Key>(digest);
 
   auto result = AsyncResultPtr(new AsyncResult<bool>());
+
+printf("pinging node='%s' key='%s'\n", keyStr.c_str(), key->ToString().c_str());
 
   controller.Ping(key, result);
 
@@ -268,6 +270,10 @@ static void PrintNodes(Kademlia & controller)
   controller.PrintNodes();
 }
 
+static void SaveBuckets(Kademlia & controller)
+{
+  controller.SaveBuckets();
+}
 
 static void InitKey(const char * rootPath)
 {
@@ -283,44 +289,14 @@ static void InitKey(const char * rootPath)
     fwrite(key->Buffer(), 1, Key::KEY_LEN, file);
     fclose(file);
   }
-}
 
+  // save copy as clear text
+  FILE * f2 = fopen((std::string(rootPath) + "/key.txt").c_str(), "w");
 
-static void InitBuckets(const char * rootPath)
-{
-  std::string bucketsPath = std::string(rootPath) + "/contacts";
-
-  FILE * file = fopen(bucketsPath.c_str(), "r");
-
-  if (file)
+  if (f2)
   {
-    fseek(file, 0, SEEK_END);
-    long size = ftell(file);
-    fclose(file);
-
-    if (size > 0)
-    {
-      return;
-    }
-  }
-
-  file = fopen(bucketsPath.c_str(), "w");
-
-  if (file)
-  {
-    sha1_t digest;
-
-    Digest::Compute("root", sizeof("root") - 1, digest);
-
-    fwrite(digest, 1, sizeof(digest), file);
-
-    Contact contact;
-    contact.addr = (long)inet_addr("127.0.0.1");
-    contact.port = (short) 1100;
-
-    fwrite(&contact, 1, sizeof(contact), file);
-
-    fclose(file);
+    fwrite(key->ToString().c_str(), 1, 40, f2);
+    fclose(f2);
   }
 }
 
@@ -330,8 +306,6 @@ static void Initialize(const char * rootPath)
   mkdir(rootPath, 0755);
 
   InitKey(rootPath);
-
-  InitBuckets(rootPath);
 }
 
 
@@ -473,6 +447,10 @@ int main(int argc, char ** argv)
     else if (words.size() == 1 && words[0] == "print")
     {
       PrintNodes(controller);
+    }
+    else if (words.size() == 1 && words[0] == "save")
+    {
+      SaveBuckets(controller);
     }
     else if (words.size() != 0)
     {

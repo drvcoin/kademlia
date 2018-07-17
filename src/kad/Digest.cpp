@@ -67,11 +67,21 @@ namespace kad
     return memcmp(computed, digest, sizeof(computed)) == 0;
   }
 
+  std::string Digest::ToString(sha1_t digest)
+  {
+    char buffer[40];
+    for (size_t i = 0; i < sizeof(sha1_t); i++)
+    {
+      sprintf(&buffer[i*2], "%02X", digest[i]);
+    }
+    return std::string(buffer);
+  }
+
   void Digest::Print(sha1_t digest)
   {
     for (size_t i = 0; i < sizeof(sha1_t); i++)
     {
-      printf("%02x", digest[i]);
+      printf("%02X", digest[i]);
     }
     printf("\n");
   }
