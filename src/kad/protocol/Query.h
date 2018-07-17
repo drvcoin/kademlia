@@ -27,20 +27,25 @@
 
 #pragma once
 
+#include "protocol/FindNode.h"
+
 namespace kad
 {
-  enum class OpCode
+  namespace protocol
   {
-    PING = 1,
-    PONG = 2,
-    STORE = 3,
-    STORE_RESPONSE = 4,
-    FIND_NODE = 5,
-    FIND_NODE_RESPONSE = 6,
-    FIND_VALUE = 7,
-    FIND_VALUE_RESPONSE = 8,
-    QUERY = 9,
-    QUERY_RESPONSE = 10,
-    __MAX__
-  };
+    class Query : public FindNode
+    {
+    public:
+
+      Query();
+
+      bool Serialize(IOutputStream & output) const override;
+
+      bool Deserialize(IInputStream & input) override;
+
+      void Print() const override;
+
+      std::string query;
+    };
+  }
 }

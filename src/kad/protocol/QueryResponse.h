@@ -27,20 +27,44 @@
 
 #pragma once
 
+#include "Buffer.h"
+#include "Instruction.h"
+
 namespace kad
 {
-  enum class OpCode
+  namespace protocol
   {
-    PING = 1,
-    PONG = 2,
-    STORE = 3,
-    STORE_RESPONSE = 4,
-    FIND_NODE = 5,
-    FIND_NODE_RESPONSE = 6,
-    FIND_VALUE = 7,
-    FIND_VALUE_RESPONSE = 8,
-    QUERY = 9,
-    QUERY_RESPONSE = 10,
-    __MAX__
-  };
+    class QueryResponse : public Instruction
+    {
+    public:
+
+      QueryResponse();
+
+      bool Serialize(IOutputStream & output) const override;
+
+      bool Deserialize(IInputStream & input) override;
+
+      void Print() const override;
+
+      void SetData(BufferPtr val)     { this->data = val; }
+
+      BufferPtr Data() const          { return this->data; }
+
+      void SetVersion(uint64_t val)   { this->version = val; }
+
+      uint64_t Version() const        { return this->version; }
+
+      void SetTTL(uint32_t val)       { this->ttl = val; }
+
+      uint32_t TTL() const            { return this->ttl; }
+
+    private:
+
+      BufferPtr data;
+
+      uint64_t version;
+
+      uint32_t ttl;
+    };
+  }
 }
