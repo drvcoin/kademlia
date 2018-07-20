@@ -1,19 +1,19 @@
 /**
  *
  * MIT License
- * 
+ *
  * Copyright (c) 2018 drvcoin
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- * 
+ *
  * =============================================================================
  */
 
@@ -107,28 +107,24 @@ namespace kad
   {
     static std::atomic<uint32_t> packageId{0};
 
-#ifdef DEBUG
-    printf("TcpTransport::Send to %s\n", target->ToString().c_str());
-#endif
-
     // TODO: write in separate thread
 
     int sockfd;
     struct sockaddr_in serv_addr;
-  
+
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
     {
       printf("ERROR opening socket\n");
       return;
     }
-  
+
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = target->addr;
     serv_addr.sin_port = htons(target->port);
 
-    if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
+    if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
     {
       printf("ERROR connecting\n");
       return;
@@ -157,13 +153,8 @@ namespace kad
     struct sockaddr_in cli_addr;
     int sockfd = this->sockfd;
     unsigned int clilen = sizeof(cli_addr);
-  
-    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 
-#ifdef DEBUG
-    const Contact & self = Config::ContactInfo();
-    printf("TcpTransport::Receive on %s\n", self.ToString().c_str());
-#endif
+    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 
     Header header;
 
@@ -209,7 +200,7 @@ namespace kad
         *len = 0;
       }
     }
-    close(newsockfd);  
+    close(newsockfd);
     return result;
   }
 }

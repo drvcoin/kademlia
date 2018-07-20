@@ -39,11 +39,8 @@ namespace kad
 
     bool Query::Serialize(IOutputStream & output) const
     {
-printf("Query::Serialize\n");
-
       bool r = FindNode::Serialize(output);
 
-      printf("serialize: %s\n", this->query.c_str());
       std::string q(this->query);
       output.WriteString(q);
 
@@ -53,14 +50,10 @@ printf("Query::Serialize\n");
 
     bool Query::Deserialize(IInputStream & input)
     {
-printf("Query::Deserialize\n");
-
       bool r = FindNode::Deserialize(input);
-
 
       std::string q;
       input.ReadString(q);
-      printf("deserialize: %s\n", q.c_str());
       this->query = q;
 
       return r;

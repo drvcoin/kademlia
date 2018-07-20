@@ -455,20 +455,37 @@ namespace kad
   void Kademlia::Query(KeyPtr target, std::string query, AsyncResultPtr result, CompleteHandler handler)
   {
     THREAD_ENSURE(this->thread.get(), Query, target, query, result, handler);
-printf("Kademlia::Query (target:%s)\n", target->ToString().c_str());
 
     if (!this->ready)
     {
       return;
     }
 
-printf("(Query) STORAGE::Load: query = %s\n", query.c_str());
-
     auto storage = Storage::Persist();
     auto buffer = storage->MatchQuery(query);
 
 
-printf("Query: Not found locally, searching in network...\n");
+    if (buffer)
+    {
+      auto rtn = dynamic_cast<AsyncResult<BufferPtr> *>(result.get());
+      if (rtn)
+      {
+        rtn->Complete(buffer);
+      }
+      else if (result)
+      {
+        result->Complete();
+      }
+
+      if (handler)
+      {
+        handler(result);
+      }
+
+      return;
+    }
+
+    printf("Query: Not found locally, searching in network...\n");
 
     std::vector<std::pair<KeyPtr, ContactPtr>> nodes;
 
@@ -481,8 +498,6 @@ printf("Query: Not found locally, searching in network...\n");
     action->SetOnCompleteHandler(
       [this, target, result, handler](void * _sender, void * _args)
       {
-
-printf("QUERY:Callback\n");
 
         auto action = reinterpret_cast<QueryAction *>(_args);
 
@@ -762,8 +777,6 @@ printf("QUERY:Callback\n");
 
     Instruction * instr = request->GetInstruction();
 
-printf("OnRequest OpCode %d\n",(int)instr->Code());
-
     switch (instr->Code())
     {
       case OpCode::PING:
@@ -805,7 +818,6 @@ printf("OnRequest OpCode %d\n",(int)instr->Code());
 
   void Kademlia::OnRequestPing(ContactPtr from, PackagePtr request)
   {
-    printf("OnRequestPing\n");
     this->dispatcher->Send(std::make_shared<Package>(
       Package::PackageType::Response,
       Config::NodeId(),
@@ -818,8 +830,6 @@ printf("OnRequest OpCode %d\n",(int)instr->Code());
 
   void Kademlia::OnRequestFindNode(ContactPtr from, PackagePtr request)
   {
-printf("OnRequestFindNode\n");
-
     protocol::FindNode * reqInstr = static_cast<protocol::FindNode *>(request->GetInstruction());
 
     auto target = reqInstr->Key();
@@ -837,10 +847,8 @@ printf("OnRequestFindNode\n");
 
     protocol::FindNodeResponse * resInstr = new protocol::FindNodeResponse();
 
-    printf("GetAllContacts: total %lu contacts\n",result.size());
     for (const auto & node : result)
     {
-      printf("key: %s contact: %s\n", node.first->ToString().c_str(), node.second->ToString().c_str());
       resInstr->AddNode(node.first, node.second);
     }
 
@@ -883,11 +891,7 @@ printf("OnRequestFindNode\n");
 
   void Kademlia::OnRequestQuery(ContactPtr from, PackagePtr request)
   {
-printf("OnRequestQUERY\n");
-
     protocol::Query * reqInstr = static_cast<protocol::Query *>(request->GetInstruction());
-
-printf("Kademlia::OnRequestQuery: query: '%s'\n",reqInstr->query.c_str());
 
     auto storage = Storage::Persist();
     auto buffer = storage->MatchQuery(reqInstr->query);
@@ -898,7 +902,6 @@ printf("Kademlia::OnRequestQuery: query: '%s'\n",reqInstr->query.c_str());
 
     if (buffer)
     {
-printf("QueryResponse: return value\n");
       protocol::QueryResponse * resInstr = new protocol::QueryResponse();
 
       resInstr->SetData(buffer);
@@ -909,7 +912,6 @@ printf("QueryResponse: return value\n");
     }
     else
     {
-printf("OnRequestFindNode\n");
       this->OnRequestFindNode(from, request);
     }
   }
@@ -1054,7 +1056,6 @@ printf("OnRequestFindNode\n");
       Json::StyledWriter jw;
 
       std::string json = jw.write(root);
-      printf("%s\n", json.c_str());
       fwrite(json.c_str(), 1, json.size(), file);
 
       fclose(file);
