@@ -69,7 +69,7 @@ namespace kad
 
     void FindValue(KeyPtr target, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
 
-    void Query(KeyPtr target, std::string query, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
+    void Query(KeyPtr target, std::string query, uint32_t limit, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
 
     void Ping(ContactPtr target, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
 

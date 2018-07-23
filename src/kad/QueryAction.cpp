@@ -124,6 +124,8 @@ namespace kad
 
     findValue->query = this->query;
 
+    findValue->limit = this->limit;
+
     PackagePtr package = std::make_shared<Package>(Package::PackageType::Request, Config::NodeId(), candidate.second, std::unique_ptr<Instruction>(findValue));
 
     this->dispatcher->Send(package, std::bind(&QueryAction::OnResponse, this, candidate.first, _1, _2));

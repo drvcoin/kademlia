@@ -452,9 +452,9 @@ namespace kad
   }
 
 
-  void Kademlia::Query(KeyPtr target, std::string query, AsyncResultPtr result, CompleteHandler handler)
+  void Kademlia::Query(KeyPtr target, std::string query, uint32_t limit, AsyncResultPtr result, CompleteHandler handler)
   {
-    THREAD_ENSURE(this->thread.get(), Query, target, query, result, handler);
+    THREAD_ENSURE(this->thread.get(), Query, target, query, limit, result, handler);
 
     if (!this->ready)
     {
@@ -464,8 +464,21 @@ namespace kad
     auto storage = Storage::Persist();
     auto buffer = storage->MatchQuery(query);
 
+    bool completed = false;
+    Json::Value root;
 
     if (buffer)
+    {
+      char* data = (char*)buffer->Data();
+
+      Json::Reader reader;
+      if (reader.parse(data, buffer->Size(), root, false) && root.isArray())
+      {
+        completed = root.size() >= limit;
+      }
+    }
+
+    if (completed)
     {
       auto rtn = dynamic_cast<AsyncResult<BufferPtr> *>(result.get());
       if (rtn)
@@ -495,6 +508,10 @@ namespace kad
 
     action->Initialize(target, query, nodes);
 
+    action->root = root;
+
+    action->limit = limit - root.size();
+
     action->SetOnCompleteHandler(
       [this, target, result, handler](void * _sender, void * _args)
       {
@@ -505,7 +522,52 @@ namespace kad
 
         auto buffer = action->GetResult();
 
-        if (rtn)
+
+        Json::Value local = action->root;
+
+        std::set<std::string> keys;
+        for (Json::Value::ArrayIndex i = 0; i != local.size(); i++)
+        {
+          if (local[i].isObject() && local[i]["node"].isString())
+          {
+            keys.emplace(local[i]["node"].asString());
+          }
+        }
+
+
+        char* data = (char*)buffer->Data();
+
+        Json::Reader reader;
+        Json::Value remote;
+
+        if (reader.parse(data, buffer->Size(), remote, false) && remote.isArray())
+        {
+          for (Json::Value::ArrayIndex i = 0; i != remote.size(); i++)
+          {
+            if (remote[i].isObject())
+            {
+              if (keys.find(remote[i]["node"].asString()) == keys.end())
+              {
+                action->root.append(remote[i]);
+              }
+            }
+          }
+        }
+
+
+        Json::StyledWriter jw;
+        std::string json = jw.write(action->root);
+
+        uint8_t * buf = new uint8_t[json.size()];
+        memcpy(buf, json.c_str(), json.size());
+        auto retbuf = std::make_shared<Buffer>(buf, json.size(), false, true);
+
+//TODO: check how value is returned
+        if (retbuf)
+        {
+          rtn->Complete(retbuf);
+        }
+        else if (rtn)
         {
           rtn->Complete(buffer);
         }
@@ -897,6 +959,23 @@ namespace kad
     auto buffer = storage->MatchQuery(reqInstr->query);
 
 
+    bool completed = false;
+    Json::Value root;
+
+    if (buffer)
+    {
+      printf("(1) RESULT: %s\n",(char*)buffer->Data());
+
+      char* data = (char*)buffer->Data();
+
+      Json::Reader reader;
+
+      if (reader.parse(data, buffer->Size(), root, false) && root.isArray())
+      {
+        completed = root.size() >= reqInstr->limit;
+      }
+    }
+
     uint64_t version = 1;
     int64_t ttl = 999;
 
@@ -910,7 +989,8 @@ namespace kad
 
       this->dispatcher->Send(std::make_shared<Package>(Package::PackageType::Response, Config::NodeId(), request->Id(), from, std::unique_ptr<Instruction>(resInstr)));
     }
-    else
+
+    if (!completed)
     {
       this->OnRequestFindNode(from, request);
     }
