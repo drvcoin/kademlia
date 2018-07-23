@@ -515,13 +515,11 @@ namespace kad
     action->SetOnCompleteHandler(
       [this, target, result, handler](void * _sender, void * _args)
       {
-
         auto action = reinterpret_cast<QueryAction *>(_args);
 
         auto rtn = dynamic_cast<AsyncResult<BufferPtr> *>(result.get());
 
         auto buffer = action->GetResult();
-
 
         Json::Value local = action->root;
 
@@ -534,26 +532,27 @@ namespace kad
           }
         }
 
-
-        char* data = (char*)buffer->Data();
-
-        Json::Reader reader;
-        Json::Value remote;
-
-        if (reader.parse(data, buffer->Size(), remote, false) && remote.isArray())
+        if (buffer)
         {
-          for (Json::Value::ArrayIndex i = 0; i != remote.size(); i++)
+          char* data = (char*)buffer->Data();
+
+          Json::Reader reader;
+          Json::Value remote;
+
+          if (reader.parse(data, buffer->Size(), remote, false) && remote.isArray())
           {
-            if (remote[i].isObject())
+            for (Json::Value::ArrayIndex i = 0; i != remote.size(); i++)
             {
-              if (keys.find(remote[i]["name"].asString()) == keys.end())
+              if (remote[i].isObject())
               {
-                action->root.append(remote[i]);
+                if (keys.find(remote[i]["name"].asString()) == keys.end())
+                {
+                  action->root.append(remote[i]);
+                }
               }
             }
           }
         }
-
 
         Json::StyledWriter jw;
         std::string json = jw.write(action->root);
@@ -964,8 +963,6 @@ namespace kad
 
     if (buffer)
     {
-      printf("(1) RESULT: %s\n",(char*)buffer->Data());
-
       char* data = (char*)buffer->Data();
 
       Json::Reader reader;
