@@ -528,9 +528,9 @@ namespace kad
         std::set<std::string> keys;
         for (Json::Value::ArrayIndex i = 0; i != local.size(); i++)
         {
-          if (local[i].isObject() && local[i]["node"].isString())
+          if (local[i].isObject() && local[i]["name"].isString())
           {
-            keys.emplace(local[i]["node"].asString());
+            keys.emplace(local[i]["name"].asString());
           }
         }
 
@@ -546,7 +546,7 @@ namespace kad
           {
             if (remote[i].isObject())
             {
-              if (keys.find(remote[i]["node"].asString()) == keys.end())
+              if (keys.find(remote[i]["name"].asString()) == keys.end())
               {
                 action->root.append(remote[i]);
               }
