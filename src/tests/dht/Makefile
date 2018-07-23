@@ -34,7 +34,7 @@ SRCS := \
 	main.cpp
 
 
-CCFLAGS = -std=c++11 -I. -I$(OUT_ROOT)/include -I$(ROOT)/../drive/src/jsoncpp/include
+CCFLAGS = -std=c++17 -I. -I$(OUT_ROOT)/include -I$(ROOT)/../drive/src/jsoncpp/include
 
 SYSLIBS = -lcrypto -pthread
 
