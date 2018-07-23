@@ -36,6 +36,9 @@
 #include "Buffer.h"
 #include "Action.h"
 
+#include <json/json.h>
+
+
 namespace kad
 {
   class QueryAction : public Action
@@ -78,10 +81,18 @@ namespace kad
 
     std::set<KeyPtr, KeyCompare> offline;
 
+
     BufferPtr result;
 
     uint64_t version = 0;
 
     uint32_t ttl = 0;
+
+  public:
+
+    Json::Value root;
+
+    uint32_t limit;
+
   };
 }

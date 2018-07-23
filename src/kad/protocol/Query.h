@@ -46,6 +46,8 @@ namespace kad
       void Print() const override;
 
       std::string query;
+
+      uint32_t limit;
     };
   }
 }

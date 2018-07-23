@@ -167,7 +167,6 @@ static void Publish(Kademlia & controller, const std::string & path)
   }
 
   char * d = (char*)buffer;
-  printf("buffer: %s\n", d);
   sha1_t dig;
   Digest::Compute(d, size, dig);
   Digest::Print(dig);
@@ -189,17 +188,16 @@ static void Publish(Kademlia & controller, const std::string & path)
 }
 
 
-static void Query(Kademlia & controller, const std::string & query)
+static void Query(Kademlia & controller, const std::string & query, uint32_t limit)
 {
   sha1_t digest;
   Digest::Compute(query.c_str(), query.size(), digest);
-  Digest::Print(digest);
 
   KeyPtr key = std::make_shared<Key>(digest);
 
   auto result = AsyncResultPtr(new  AsyncResult<BufferPtr>());
 
-  controller.Query(key, query, result);
+  controller.Query(key, query, limit, result);
 
   result->Wait();
 
@@ -220,8 +218,6 @@ static void Ping(Kademlia & controller, const std::string & keyStr)
   KeyPtr key = std::make_shared<Key>(digest);
 
   auto result = AsyncResultPtr(new AsyncResult<bool>());
-
-printf("pinging node='%s' key='%s'\n", keyStr.c_str(), key->ToString().c_str());
 
   controller.Ping(key, result);
 
@@ -505,9 +501,16 @@ int main(int argc, char ** argv)
     {
       Publish(controller, words[1]);
     }
-    else if (words.size() == 2 && words[0] == "query")
+    else if (words.size() >= 2 && words[0] == "query")
     {
-      Query(controller, words[1]);
+      uint32_t limit = (uint32_t)8;
+
+      if (words.size() >= 3)
+      {
+        limit = (uint32_t)strtoul(words[2].c_str(), nullptr, 10);
+      }
+
+      Query(controller, words[1], limit);
     }
     else if (words.size() == 2 && words[0] == "ping")
     {

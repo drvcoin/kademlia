@@ -58,9 +58,6 @@ namespace kad
 
   bool QueryAction::Start()
   {
-
-printf("QueryAction::Start()\n");
-
     size_t idx = 0;
 
     for (const auto & candidate : this->candidates)
@@ -127,7 +124,7 @@ printf("QueryAction::Start()\n");
 
     findValue->query = this->query;
 
-printf("#QUERYAction::SendCandidate: query = %s\n", findValue->query.c_str());
+    findValue->limit = this->limit;
 
     PackagePtr package = std::make_shared<Package>(Package::PackageType::Request, Config::NodeId(), candidate.second, std::unique_ptr<Instruction>(findValue));
 
@@ -138,8 +135,6 @@ printf("#QUERYAction::SendCandidate: query = %s\n", findValue->query.c_str());
   void QueryAction::OnResponse(KeyPtr key, PackagePtr request, PackagePtr response)
   {
     THREAD_ENSURE(this->owner, OnResponse, key, request, response);
-printf("Kademlia::QUERYAction::OnResponse\n");
-
 
     this->validating.erase(key);
 
@@ -157,8 +152,6 @@ printf("Kademlia::QUERYAction::OnResponse\n");
 
         if (instr->Code() == OpCode::QUERY_RESPONSE)
         {
-printf("Kademlia::QUERYAction::OnResponse OpCode::QUERY_RESPONSE\n");
-
           protocol::QueryResponse * findValueResponse = static_cast<protocol::QueryResponse *>(instr);
 
           this->result = findValueResponse->Data();
@@ -174,15 +167,12 @@ printf("Kademlia::QUERYAction::OnResponse OpCode::QUERY_RESPONSE\n");
         }
         else if (instr->Code() == OpCode::FIND_NODE_RESPONSE)
         {
-printf("Kademlia::QUERYAction::OnResponse OpCode::FIND_NODE_RESPONSE\n");
-
           this->missed[std::make_shared<Key>(this->target->GetDistance(*key))] = std::make_pair(key, request->Target());
 
           protocol::FindNodeResponse * findNodeResponse = static_cast<protocol::FindNodeResponse *>(instr);
 
           for (const auto & node : findNodeResponse->Nodes())
           {
-printf("findNodesResponse->Nodes: %s\n",node.first->ToString().c_str());
             KeyPtr distance = std::make_shared<Key>(this->target->GetDistance(*node.first));
 
             this->candidates[distance] = node;
@@ -193,7 +183,6 @@ printf("findNodesResponse->Nodes: %s\n",node.first->ToString().c_str());
 
     if (!this->IsCompleted())
     {
-printf("! IsCompleted\n");
       size_t idx = 0;
 
       for (const auto & candidate : this->candidates)
@@ -208,8 +197,9 @@ printf("! IsCompleted\n");
           break;
         }
 
+
         if (this->validated.find(candidate.second.first) == this->validated.end() &&
-            this->validating.find(candidate.second.first) == this->offline.end())
+            this->validating.find(candidate.second.first) == this->validating.end())
         {
           this->SendCandidate(candidate.second);
           break;
@@ -224,7 +214,6 @@ printf("! IsCompleted\n");
 
     if (this->IsCompleted())
     {
-printf("IsCompleted\n");
       if (this->onComplete)
       {
         this->onComplete(this->onCompleteSender, this);
