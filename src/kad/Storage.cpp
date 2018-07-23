@@ -38,10 +38,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <limits>
-#include "Config.h"
-#include "Storage.h"
-
 #include <json/json.h>
+#include "Config.h"
+#include "IndexQuery.h"
+#include "Storage.h"
 
 
 namespace kad
@@ -301,128 +301,72 @@ namespace kad
     return result;
   }
 
-  bool Storage::Compare(const char * data, const char * query) const
+
+  BufferPtr Storage::MatchQuery(std::string queryStr) const
   {
-    bool res;
+printf("Storage::MatchQuery: query %s\n", queryStr.c_str());
 
-    res = false;
+    Json::Value arr{Json::arrayValue};
 
-    int s;
-    int r;
-
-    sscanf( query, "(storage:%d+reputation:%d", &s, &r );
-    printf("storage = %d reputation = %d\n", s, r);
-
-    printf("# COMPARE(data,query): %s >< %s\n", data, query);
-
-
-    Json::Reader reader;
-    Json::Value root;
-
-    if (!reader.parse(data, strlen(data), root, false))
+    IndexQuery query;
+    if (query.Initialize(std::move(queryStr)))
     {
-      printf("ERROR parsing json\n");
-      return false;
-    }
-
-
-    std::string node = root["node"].asString();
-    int storage = root["storage"].asInt();
-    int reputation = root["reputation"].asInt();
-    printf("node: %s %d %d\n",node.c_str(), storage, reputation);
-
-    if (storage >= s && reputation >= r)
-    {
-      res = true;
-    }
-    return res;
-  }
-
-  char * rtrim(char *s)
-  {
-    char * e = s + strlen(s) - 1;
-    while (*e == ' ' || *e == '\r' || *e == '\n' || *e == '\t')
-    {
-      *e = '\0';
-      e--;
-    }
-    return s;
-  }
-
-  BufferPtr Storage::MatchQuery(std::string query) const
-  {
-printf("Storage::MatchQuery: query %s\n", query.c_str());
-
-    DIR * dir = opendir(this->folder.c_str());
-
-    if (!dir)
-    {
-      return nullptr;
-    }
-
-    struct dirent * entry = nullptr;
-
-    while ((entry = readdir(dir)) != nullptr)
-    {
-      std::string name = entry->d_name;
-      char keyname[PATH_MAX];
-      long long expiration;
-      unsigned long long version;
-
-      if (sscanf(name.c_str(), "%lld-%llu-%s", &expiration, &version, keyname) == 3)
+      DIR * dir = opendir(this->folder.c_str());
+      if (dir)
       {
-        printf("%s\n", name.c_str());
-
-        TCHAR path[PATH_MAX];
-        _stprintf(path, _T("%s%s%s"), this->folder.c_str(), PATH_SEPERATOR_STR, _TS(name).c_str());
-
-
-        struct stat stat_buf;
-
-        if (_tstat(path, &stat_buf) != 0)
+        struct dirent * entry = nullptr;
+        while ((entry = readdir(dir)) != nullptr)
         {
-          return nullptr;
-        }
+          std::string name = entry->d_name;
+          char keyname[PATH_MAX];
+          long long expiration;
+          unsigned long long version;
 
-        size_t size = stat_buf.st_size;
-
-        uint8_t * buffer = new uint8_t[size];
-
-        bool result = false;
-
-        FILE * file = _tfopen(path, _T("rb"));
-
-        if (file)
-        {
-          result = fread(buffer, 1, size, file) == size;
-
-          if (result)
+          if (sscanf(name.c_str(), "%lld-%llu-%s", &expiration, &version, keyname) == 3)
           {
-            rtrim((char*)buffer);
+            TCHAR path[PATH_MAX];
+            _stprintf(path, _T("%s%s%s"), this->folder.c_str(), PATH_SEPERATOR_STR, _TS(name).c_str());
 
-            printf("%lu '%s'\n", size, (char*) buffer);
-
-            bool compres = this->Compare((char*)buffer, query.c_str());
-            if (compres)
+            struct stat statBuf;
+            if (_tstat(path, &statBuf) == 0 && statBuf.st_size > BUFSIZ)
             {
-              printf("MATCH\n");
-
-              return std::make_shared<Buffer>(buffer, size, false, true);
-
+              printf("Failed to parse %s. The size is too large for index.\n", name.c_str());
             }
-            else
+
+            char buf[BUFSIZ];
+            size_t len = 0;
+
+            FILE * file = _tfopen(path, _T("rb"));
+            if (file)
             {
-              delete[] buffer;
+              len = fread(buf, 1, BUFSIZ, file);
+              fclose(file);
+            }
+
+            if (len > 0)
+            {
+              Json::Value target;
+              Json::Reader reader;
+              if (reader.parse(buf, len, target) && query.Match(target))
+              {
+                target["_expiration"] = Json::Int(expiration);
+                target["_version"] = Json::UInt(version);
+                arr.append(target);
+              }
             }
           }
-
-          fclose(file);
         }
 
+        closedir(dir);
       }
     }
 
-    closedir(dir);
+    if (arr.size() > 0)
+    {
+      Json::FastWriter writer;
+      auto str = writer.write(arr);
+      return std::make_shared<Buffer>(reinterpret_cast<const uint8_t *>(str.c_str()), str.size(), true, true);
+    }
 
     return nullptr;
   }

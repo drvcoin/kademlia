@@ -43,7 +43,8 @@ SRCS := \
 	EventLoop.cpp \
 	FindNodeAction.cpp \
 	FindValueAction.cpp \
-        QueryAction.cpp \
+  QueryAction.cpp \
+	IndexQuery.cpp \
 	IInputStream.cpp \
 	InstructionSerializer.cpp \
 	IOutputStream.cpp \
@@ -67,8 +68,8 @@ SRCS := \
 	protocol/Pong.cpp \
 	protocol/Store.cpp \
 	protocol/StoreResponse.cpp \
-        protocol/Query.cpp \
-        protocol/QueryResponse.cpp \
+  protocol/Query.cpp \
+  protocol/QueryResponse.cpp \
 
 PHEADERS := \
 	Action.h \
@@ -85,7 +86,8 @@ PHEADERS := \
 	EventLoop.h \
 	FindNodeAction.h \
 	FindValueAction.h \
-        QueryAction.h \
+  QueryAction.h \
+	IndexQuery.h \
 	IInputStream.h \
 	Instruction.h \
 	InstructionSerializer.h \
@@ -115,8 +117,8 @@ PHEADERS := \
 	protocol/Protocol.h \
 	protocol/Store.h \
 	protocol/StoreResponse.h \
-        protocol/Query.h \
-        protocol/QueryResponse.h \
+  protocol/Query.h \
+  protocol/QueryResponse.h \
 
 
 CCFLAGS = -std=c++17 -I. -I$(OUT_ROOT)/include -I$(ROOT)/../drive/src/jsoncpp/include

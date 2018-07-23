@@ -64,8 +64,6 @@ namespace kad
 
     void UpdateTimestamp(KeyPtr key, int64_t timestamp = -1);
 
-    bool Compare(const char * data, const char * query) const;
-
     BufferPtr MatchQuery(std::string query) const;
 
     BufferPtr Load(KeyPtr key) const;
