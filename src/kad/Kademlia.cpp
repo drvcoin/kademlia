@@ -555,7 +555,7 @@ namespace kad
           }
         }
 
-        Json::StyledWriter jw;
+        Json::FastWriter jw;
         std::string json = jw.write(action->root);
 
         uint8_t * buf = new uint8_t[json.size()];

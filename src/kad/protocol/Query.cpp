@@ -52,9 +52,7 @@ namespace kad
     {
       bool r = FindNode::Deserialize(input);
 
-      std::string q;
-      input.ReadString(q);
-      this->query = q;
+      input.ReadString(this->query);
 
       return r;
     }
