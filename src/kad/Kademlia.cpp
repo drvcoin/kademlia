@@ -67,7 +67,7 @@ namespace kad
 
   Kademlia::~Kademlia()
   {
-    this->SaveBuckets();
+    //this->SaveBuckets();
   }
 
 
@@ -225,7 +225,7 @@ namespace kad
 
       this->OnReplicate(targets, 0);
 
-      SaveBuckets();
+      //SaveBuckets();
     }
   }
 
@@ -975,7 +975,7 @@ namespace kad
     }
 
     uint64_t version = 1;
-    int64_t ttl = 999;
+    int64_t ttl = 864000;
 
     if (buffer)
     {
