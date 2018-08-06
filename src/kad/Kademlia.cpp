@@ -41,6 +41,7 @@
 #include "Timer.h"
 #include "Kademlia.h"
 
+#include <fstream>
 #include <json/json.h>
 #include <arpa/inet.h>
 
@@ -66,7 +67,7 @@ namespace kad
 
   Kademlia::~Kademlia()
   {
-    this->SaveBuckets();
+    //this->SaveBuckets();
   }
 
 
@@ -224,7 +225,7 @@ namespace kad
 
       this->OnReplicate(targets, 0);
 
-      SaveBuckets();
+      //SaveBuckets();
     }
   }
 
@@ -554,7 +555,7 @@ namespace kad
           }
         }
 
-        Json::StyledWriter jw;
+        Json::FastWriter jw;
         std::string json = jw.write(action->root);
 
         uint8_t * buf = new uint8_t[json.size()];
@@ -974,7 +975,7 @@ namespace kad
     }
 
     uint64_t version = 1;
-    int64_t ttl = 999;
+    int64_t ttl = 864000;
 
     if (buffer)
     {
@@ -1024,8 +1025,6 @@ namespace kad
   {
     TSTRING bucketsFilePath = Config::RootPath() + _T(PATH_SEPERATOR_STR) + _T("contacts.json");
 
-    // TODO: serialize contacts
-
     FILE * file = _tfopen(bucketsFilePath.c_str(), _T("r"));
     if (!file)
     {
@@ -1041,32 +1040,15 @@ namespace kad
 
     printf("opening file %s\n",bucketsFilePath.c_str());
 
-    size_t size = BUFSIZ;
-    char * buffer = static_cast<char *>(malloc(size));
-    size_t offset = 0;
+    std::ifstream ifs(bucketsFilePath);
 
-    size_t bytes;
-    while ((bytes = fread(buffer + offset, 1, size - offset, file)) == size - offset)
-    {
-      char * buf = static_cast<char *>(realloc(buffer, size + BUFSIZ));
-      if (!buf)
-      {
-        break;
-      }
-
-      buffer = buf;
-      offset = size;
-      size += BUFSIZ;
-    }
-
-    int len = offset + bytes;
-
+    std::string content( (std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>() );
 
 
     Json::Reader reader;
     Json::Value root;
 
-    if (!reader.parse(buffer, len, root, false) || !root.isArray())
+    if (!reader.parse(content, root, false) || !root.isArray())
     {
       printf("ERROR parsing json\n");
       return false;
@@ -1074,20 +1056,33 @@ namespace kad
 
     for (uint32_t i = 0; i < root.size(); i++)
     {
+      if (!root[i].isObject() ||
+          !root[i]["node"].isString() ||
+          !root[i]["endpoints"].isArray())
+      {
+        printf("WARNING: json record in contacts file is wrong\n");
+        continue;
+      }
+
       std::string keyStr = root[i]["node"].asString();
+      auto key = std::make_shared<Key>();
+      key->FromString(keyStr.c_str());
 
 // TODO: taking first endpoint, in future support multiple endpoints
       uint32_t j = 0;
       auto endpoint = root[i]["endpoints"][j];
+
+      if (!endpoint.isString())
+      {
+        printf("WARNING: contact endpoint is not string\n");
+        continue;
+      }
 
       std::string ep = endpoint.asString();
 
       auto pos = ep.find(':');
       std::string addr = ep.substr(0,pos);
       std::string port = ep.substr(pos+1,ep.size());
-
-      auto key = std::make_shared<Key>();
-      key->FromString(keyStr.c_str());
 
       auto contact = std::make_shared<Contact>();
       contact->addr = (long)inet_addr(addr.c_str());
@@ -1130,7 +1125,7 @@ namespace kad
         root.append(node);
       }
 
-      Json::StyledWriter jw;
+      Json::FastWriter jw;
 
       std::string json = jw.write(root);
       fwrite(json.c_str(), 1, json.size(), file);
