@@ -162,8 +162,43 @@ namespace kad
 
           if (this->result)
           {
-            this->Complete();
+            Json::Value local = this->root;
+
+            std::set<std::string> keys;
+            for (Json::Value::ArrayIndex i = 0; i != local.size(); i++)
+            {
+              if (local[i].isObject() && local[i]["name"].isString())
+              {
+                keys.emplace(local[i]["name"].asString());
+              }
+            }
+
+            char* data = (char*)this->result->Data();
+
+            Json::Reader reader;
+            Json::Value remote;
+
+            if (reader.parse(data, this->result->Size(), remote, false) && remote.isArray())
+            {
+              for (Json::Value::ArrayIndex i = 0; i != remote.size(); i++)
+              {
+                if (remote[i].isObject())
+                {
+                  if (keys.find(remote[i]["name"].asString()) == keys.end())
+                  {
+                    this->root.append(remote[i]);
+                  }
+                }
+              }
+            }
+
+            if (this->root.size() >= this->limit)
+            {
+              this->Complete();
+            }
+
           }
+
         }
         else if (instr->Code() == OpCode::FIND_NODE_RESPONSE)
         {

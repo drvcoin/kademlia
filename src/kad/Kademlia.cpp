@@ -511,7 +511,7 @@ namespace kad
 
     action->root = root;
 
-    action->limit = limit - root.size();
+    action->limit = limit;
 
     action->SetOnCompleteHandler(
       [this, target, result, handler](void * _sender, void * _args)
@@ -520,54 +520,12 @@ namespace kad
 
         auto rtn = dynamic_cast<AsyncResult<BufferPtr> *>(result.get());
 
-        auto buffer = action->GetResult();
-
-        Json::Value local = action->root;
-
-        std::set<std::string> keys;
-        for (Json::Value::ArrayIndex i = 0; i != local.size(); i++)
-        {
-          if (local[i].isObject() && local[i]["name"].isString())
-          {
-            keys.emplace(local[i]["name"].asString());
-          }
-        }
-
-        if (buffer)
-        {
-          char* data = (char*)buffer->Data();
-
-          Json::Reader reader;
-          Json::Value remote;
-
-          if (reader.parse(data, buffer->Size(), remote, false) && remote.isArray())
-          {
-            for (Json::Value::ArrayIndex i = 0; i != remote.size(); i++)
-            {
-              if (remote[i].isObject())
-              {
-                if (keys.find(remote[i]["name"].asString()) == keys.end())
-                {
-                  action->root.append(remote[i]);
-                }
-              }
-            }
-          }
-        }
-
         Json::FastWriter jw;
         std::string json = jw.write(action->root);
 
-        uint8_t * buf = new uint8_t[json.size()];
-        memcpy(buf, json.c_str(), json.size());
-        auto retbuf = std::make_shared<Buffer>(buf, json.size(), false, true);
+        auto buffer = std::make_shared<Buffer>((uint8_t*)json.c_str(), json.size(), true, true);
 
-//TODO: check how value is returned
-        if (retbuf)
-        {
-          rtn->Complete(retbuf);
-        }
-        else if (rtn)
+        if (buffer)
         {
           rtn->Complete(buffer);
         }
