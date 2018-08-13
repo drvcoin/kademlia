@@ -304,8 +304,6 @@ namespace kad
 
   BufferPtr Storage::MatchQuery(std::string queryStr) const
   {
-printf("Storage::MatchQuery: query %s\n", queryStr.c_str());
-
     Json::Value arr{Json::arrayValue};
 
     IndexQuery query;
