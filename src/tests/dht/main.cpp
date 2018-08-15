@@ -188,7 +188,7 @@ static void Publish(Kademlia & controller, const std::string & path)
 }
 
 
-static void Query(Kademlia & controller, const std::string & query, uint32_t limit)
+static void Query(Kademlia & controller, std::string & query, uint32_t limit)
 {
   sha1_t digest;
   Digest::Compute(query.c_str(), query.size(), digest);
@@ -196,6 +196,12 @@ static void Query(Kademlia & controller, const std::string & query, uint32_t lim
   KeyPtr key = std::make_shared<Key>(digest);
 
   auto result = AsyncResultPtr(new  AsyncResult<BufferPtr>());
+
+  std::size_t pos = 0;
+  while ((pos = query.find('+',pos)) != std::string::npos)
+  {
+    query[pos++]=' ';
+  }
 
   controller.Query(key, query, limit, result);
 
