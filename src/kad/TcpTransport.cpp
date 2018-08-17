@@ -126,7 +126,7 @@ namespace kad
 
     if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
     {
-      printf("ERROR connecting\n");
+      printf("ERROR connecting to %s\n", target->ToString().c_str());
       return;
     }
 
