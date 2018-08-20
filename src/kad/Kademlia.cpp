@@ -986,7 +986,7 @@ namespace kad
     FILE * file = _tfopen(bucketsFilePath.c_str(), _T("r"));
     if (!file)
     {
-      bucketsFilePath = Config::RootPath() + _T(PATH_SEPERATOR_STR) + _T("default_contacts.json");
+      bucketsFilePath = Config::DefcontPath();
 
       file = _tfopen(bucketsFilePath.c_str(), _T("r"));
       if (!file)
