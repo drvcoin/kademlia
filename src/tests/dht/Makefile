@@ -28,17 +28,19 @@ ROOT=$(realpath ../../..)
 
 include $(ROOT)/Config.mk
 
-PROGRAM := test-dht
+DRIVE_ROOT ?= $(ROOT)/../..
+
+TARGETEXE := test-dht
 
 SRCS := \
 	main.cpp
 
 
-CCFLAGS = -std=c++17 -I. -I$(OUT_ROOT)/include -I$(ROOT)/../drive/src/jsoncpp/include
+CCFLAGS = -std=c++17 -I. -I$(INCDIR) -I$(DRIVE_ROOT)/src/jsoncpp/include
 
 SYSLIBS = -lcrypto -pthread
 
-VPATH = $(ROOT)/../drive/out/bin
+VPATH = $(DRIVE_ROOT)/out/bin $(BINDIR)
 
 LIBS = \
        kad.a \

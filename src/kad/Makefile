@@ -28,7 +28,9 @@ ROOT=$(realpath ../..)
 
 include $(ROOT)/Config.mk
 
-LIB := kad
+DRIVE_ROOT ?= $(ROOT)/../..
+
+TARGETLIB := kad
 
 SRCS := \
 	Action.cpp \
@@ -71,7 +73,7 @@ SRCS := \
   protocol/Query.cpp \
   protocol/QueryResponse.cpp \
 
-PHEADERS := \
+HEADERS := \
 	Action.h \
 	AsyncResult.h \
 	Bucket.h \
@@ -120,8 +122,7 @@ PHEADERS := \
   protocol/Query.h \
   protocol/QueryResponse.h \
 
-
-CCFLAGS = -std=c++17 -I. -I$(OUT_ROOT)/include -I$(ROOT)/../drive/src/jsoncpp/include
+CCFLAGS = -std=c++17 -I. -I$(DRIVE_ROOT)/src/jsoncpp/include
 
 SYSLIBS = -lcrypto -pthread
 

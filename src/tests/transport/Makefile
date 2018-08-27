@@ -28,17 +28,19 @@ ROOT=$(realpath ../../..)
 
 include $(ROOT)/Config.mk
 
-PROGRAM := test-transport
+DRIVE_ROOT ?= $(ROOT)/../..
+
+TARGETEXE := test-transport
 
 SRCS := \
 	main.cpp
 
 
-CCFLAGS = -std=c++17 -I. -I$(OUT_ROOT)/include
+CCFLAGS = -std=c++17 -I. -I$(INCDIR)
 
 SYSLIBS = -pthread
 
-LIBS = kad.a
+LIBS = $(BINDIR)/kad.a
 
 WARNING_CLEAN = 1
 
