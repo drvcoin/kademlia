@@ -24,17 +24,11 @@
 # =============================================================================
 #
 
-ROOT := $(realpath .)
-include $(ROOT)/Config.mk
+cmake_minimum_required(VERSION 3.1)
 
-DIRS = \
-	src
+project(kademlia_src)
 
-.PHONY: all clean $(DIRS)
+set(ROOT ${PROJECT_SOURCE_DIR}/..)
 
-all: $(DIRS)
-
-clean: $(DIRS)
-
-$(DIRS):
-	@$(MAKE) -C $@ $(MAKECMDGOALS) $$([ -f $@/Makefile.mk ] && echo -n "-f Makefile.mk")
+add_subdirectory(kad)
+add_subdirectory(tests)
