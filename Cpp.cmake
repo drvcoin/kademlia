@@ -43,7 +43,7 @@ macro(bd_sys_lib target name)
   target_link_libraries(${ARGV0} ${ARGV1})
 endmacro(bd_sys_lib)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
