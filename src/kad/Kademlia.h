@@ -65,6 +65,8 @@ namespace kad
 
     void Publish(KeyPtr hash, BufferPtr data, uint32_t ttl, uint64_t version = 0, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
 
+    void SaveLog(KeyPtr hash, BufferPtr data, uint32_t ttl, uint64_t version = 0, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
+
     void FindNode(KeyPtr target, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr, bool restrictBucket = false);
 
     void FindValue(KeyPtr target, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);

@@ -106,7 +106,7 @@ namespace kad
         case FieldType::INT:
         {
           auto f = static_cast<IntField *>(field.get());
-          if (f->value > val.asInt())
+          if (f->exclude != (f->value > val.asInt()))
           {
             return false;
           }
@@ -166,6 +166,7 @@ namespace kad
       ptr->name = std::string(str, delim - str);
       ptr->type = FieldType::INT;
       ptr->value = valueJson.asInt();
+      ptr->exclude = exclude;
       return std::unique_ptr<FieldBase>(ptr);
     }
 

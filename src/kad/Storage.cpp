@@ -347,8 +347,11 @@ namespace kad
               Json::Reader reader;
               if (reader.parse(buf, len, target) && query.Match(target))
               {
-                target["_expiration"] = Json::Int(expiration);
-                target["_version"] = Json::UInt(version);
+                if (target["type"].asString().find("log:") != 0)
+                {
+                  target["_expiration"] = Json::Int(expiration);
+                  target["_version"] = Json::UInt(version);
+                }
                 arr.append(target);
               }
             }

@@ -670,6 +670,66 @@ namespace kad
     );
   }
 
+  void Kademlia::SaveLog(KeyPtr hash, BufferPtr data, uint32_t ttl, uint64_t version, AsyncResultPtr result, CompleteHandler handler)
+  {
+    THREAD_ENSURE(this->thread.get(), SaveLog, hash, data, ttl, version, result, handler);
+
+    if (!this->ready)
+    {
+      return;
+    }
+
+    this->FindNode(hash, AsyncResultPtr(new AsyncResult<std::vector<std::pair<KeyPtr, ContactPtr>>>()),
+      [this, hash, data, ttl, version, result, handler](AsyncResultPtr rtn)
+      {
+        const auto & nodes = AsyncResultHelper::GetResult<std::vector<std::pair<KeyPtr, ContactPtr>>>(rtn.get());
+
+        auto complete = [result, handler](bool val)
+        {
+          auto storeResult = dynamic_cast<AsyncResult<bool> *>(result.get());
+          if (storeResult)
+          {
+            storeResult->Complete(val);
+          }
+          else if (result)
+          {
+            result->Complete();
+          }
+
+          if (handler)
+          {
+            handler(result);
+          }
+        };
+
+        if (nodes.empty())
+        {
+          complete(false);
+          return;
+        }
+
+        auto action = std::unique_ptr<StoreAction>(new StoreAction(this->thread.get(), this->dispatcher.get()));
+
+        action->Initialize(nodes, hash, version, data, ttl, true);
+
+        action->SetOnCompleteHandler(
+          [hash, complete](void * sender, void * args)
+          {
+            auto action = reinterpret_cast<StoreAction *>(args);
+
+            complete(action->GetResult());
+          },
+          this
+        );
+
+        if (action->Start())
+        {
+          action.release();
+        }
+      }
+    );
+  }
+
 
   void Kademlia::Ping(ContactPtr target, AsyncResultPtr result, CompleteHandler handler)
   {
