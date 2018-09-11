@@ -49,6 +49,12 @@ namespace kad
 
   int Config::refreshTimerInterval = 5 * 60 * 1000;
 
+  uint32_t Config::connectTimeout = 5;
+
+  uint32_t Config::sendTimeout = 5;
+
+  uint32_t Config::recvTimeout = 5;
+
 
   void Config::Initialize(TSTRING rootPath, TSTRING defcontPath)
   {

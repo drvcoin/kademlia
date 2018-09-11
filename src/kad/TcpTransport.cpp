@@ -107,17 +107,21 @@ namespace kad
   {
     static std::atomic<uint32_t> packageId{0};
 
-    // TODO: write in separate thread
-
     int sockfd;
     struct sockaddr_in serv_addr;
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
+
     if (sockfd < 0)
     {
       printf("ERROR opening socket\n");
       return;
     }
+
+    struct timeval tv = {0};
+    tv.tv_sec = Config::SendTimeout();
+    setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -126,9 +130,38 @@ namespace kad
 
     if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
     {
-      printf("ERROR connecting to %s\n", target->ToString().c_str());
-      close(sockfd);
-      return;
+      if (errno == EINPROGRESS)
+      {
+        socklen_t len;
+        fd_set myset;
+        int valopt;
+
+        tv.tv_sec = Config::ConnectTimeout();
+        tv.tv_usec = 0;
+        FD_ZERO(&myset);
+        FD_SET(sockfd, &myset);
+        if (select(sockfd+1, NULL, &myset, NULL, &tv) > 0) {
+
+           len = sizeof(int);
+           getsockopt(sockfd, SOL_SOCKET, SO_ERROR, (void*)(&valopt), &len);
+           if (valopt) {
+              printf("ERROR connecting to %s: %d - %s\n", target->ToString().c_str(), valopt, strerror(valopt));
+              close(sockfd);
+              return;
+           }
+        }
+        else
+        {
+          printf("TIMEOUT ERROR connecting to %s\n", target->ToString().c_str());
+          close(sockfd);
+          return;
+        }
+      }
+      else {
+        printf("ERROR connecting to %s\n", target->ToString().c_str());
+        close(sockfd);
+        return;
+      }
     }
 
 

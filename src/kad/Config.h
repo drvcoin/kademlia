@@ -61,6 +61,12 @@ namespace kad
 
     static int RefreshTimerInterval()     { return refreshTimerInterval; }
 
+    static int ConnectTimeout()           { return connectTimeout; }
+
+    static int SendTimeout()              { return sendTimeout; }
+
+    static int RecvTimeout()              { return recvTimeout; }
+
   private:
 
     static void InitKey();
@@ -84,5 +90,11 @@ namespace kad
     static uint32_t replicateTTL;
 
     static int refreshTimerInterval;
+
+    static uint32_t connectTimeout;
+
+    static uint32_t sendTimeout;
+
+    static uint32_t recvTimeout;
   };
 }
