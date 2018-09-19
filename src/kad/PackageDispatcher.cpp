@@ -106,6 +106,8 @@ namespace kad
     PackageDispatcher * _this = reinterpret_cast<PackageDispatcher *>(sender);
     Subscription * subscription = reinterpret_cast<Subscription *>(args);
 
+    bool managed = false;
+
     if (subscription->request->Type() == Package::PackageType::Request && (subscription->handler || subscription->timeout > 0))
     {
       SubscriptionId id;
@@ -113,6 +115,7 @@ namespace kad
       id.requestId = subscription->request->Id();
 
       _this->subscriptions[id] = subscription;
+      managed = true;
 
       if (subscription->timeout > 0)
       {
@@ -139,6 +142,11 @@ namespace kad
     if (subscription->request->Serialize(buffer))
     {
       _this->transport->Send(subscription->request->Target(), buffer.Buffer(), buffer.Offset());
+    }
+
+    if (!managed && subscription)
+    {
+      delete subscription;
     }
   }
 
