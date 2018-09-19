@@ -27,18 +27,27 @@
 
 #pragma once
 
-
-#include "protocol/Ping.h"
-#include "protocol/Pong.h"
 #include "protocol/FindNode.h"
-#include "protocol/FindNodeResponse.h"
-#include "protocol/FindValue.h"
-#include "protocol/FindValueResponse.h"
-#include "protocol/Query.h"
-#include "protocol/QueryResponse.h"
-#include "protocol/Store.h"
-#include "protocol/StoreResponse.h"
-#include "protocol/StoreLog.h"
-#include "protocol/StoreLogResponse.h"
-#include "protocol/QueryLog.h"
-#include "protocol/QueryLogResponse.h"
+
+namespace kad
+{
+  namespace protocol
+  {
+    class QueryLog : public FindNode
+    {
+    public:
+
+      QueryLog();
+
+      bool Serialize(IOutputStream & output) const override;
+
+      bool Deserialize(IInputStream & input) override;
+
+      void Print() const override;
+
+      std::string query;
+
+      uint32_t limit;
+    };
+  }
+}

@@ -65,13 +65,15 @@ namespace kad
 
     void Publish(KeyPtr hash, BufferPtr data, uint32_t ttl, uint64_t version = 0, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
 
-    void SaveLog(KeyPtr hash, BufferPtr data, uint32_t ttl, uint64_t version = 0, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
+    void StoreLog(KeyPtr hash, BufferPtr data, uint32_t ttl, uint64_t version = 0, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
 
     void FindNode(KeyPtr target, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr, bool restrictBucket = false);
 
     void FindValue(KeyPtr target, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
 
     void Query(KeyPtr target, std::string query, uint32_t limit, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
+
+    void QueryLogs(KeyPtr target, std::string query, uint32_t limit, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
 
     void Ping(ContactPtr target, AsyncResultPtr result = nullptr, CompleteHandler handler = nullptr);
 
@@ -97,7 +99,11 @@ namespace kad
 
     void OnRequestQuery(ContactPtr from, PackagePtr request);
 
+    void OnRequestQueryLog(ContactPtr from, PackagePtr request);
+
     void OnRequestStore(ContactPtr from, PackagePtr request);
+
+    void OnRequestStoreLog(ContactPtr from, PackagePtr request);
 
   private:
 

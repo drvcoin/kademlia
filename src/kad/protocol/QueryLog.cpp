@@ -25,20 +25,41 @@
  * =============================================================================
  */
 
-#pragma once
-
-
-#include "protocol/Ping.h"
-#include "protocol/Pong.h"
-#include "protocol/FindNode.h"
-#include "protocol/FindNodeResponse.h"
-#include "protocol/FindValue.h"
-#include "protocol/FindValueResponse.h"
-#include "protocol/Query.h"
-#include "protocol/QueryResponse.h"
-#include "protocol/Store.h"
-#include "protocol/StoreResponse.h"
-#include "protocol/StoreLog.h"
-#include "protocol/StoreLogResponse.h"
+#include <stdio.h>
 #include "protocol/QueryLog.h"
-#include "protocol/QueryLogResponse.h"
+
+namespace kad
+{
+  namespace protocol
+  {
+    QueryLog::QueryLog()
+    {
+      this->code = OpCode::QUERY_LOG;
+    }
+
+    bool QueryLog::Serialize(IOutputStream & output) const
+    {
+      bool r = FindNode::Serialize(output);
+
+      std::string q(this->query);
+      output.WriteString(q);
+
+      return r;
+    }
+
+
+    bool QueryLog::Deserialize(IInputStream & input)
+    {
+      bool r = FindNode::Deserialize(input);
+
+      input.ReadString(this->query);
+
+      return r;
+    }
+
+    void QueryLog::Print() const
+    {
+      printf("[QUERY_LOG] key=%s\n", this->Key()->ToString().c_str());
+    }
+  }
+}

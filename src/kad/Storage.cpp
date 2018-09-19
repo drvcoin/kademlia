@@ -42,6 +42,7 @@
 #include "Config.h"
 #include "IndexQuery.h"
 #include "Storage.h"
+#include "Digest.h"
 
 
 namespace kad
@@ -50,6 +51,7 @@ namespace kad
 
   Storage * Storage::cache = nullptr;
 
+  Storage * Storage::log = nullptr;
 
   Storage * Storage::Persist()
   {
@@ -61,7 +63,6 @@ namespace kad
     return persist;
   }
 
-
   Storage * Storage::Cache()
   {
     if (unlikely(cache == nullptr))
@@ -70,6 +71,16 @@ namespace kad
     }
 
     return cache;
+  }
+
+  Storage * Storage::Log()
+  {
+    if (unlikely(log == nullptr))
+    {
+      log = new Storage(Storage::Mkdir(_T("log")));
+    }
+
+    return log;
   }
 
 
@@ -301,6 +312,56 @@ namespace kad
     return result;
   }
 
+  bool Storage::SaveLog(KeyPtr key, uint64_t version, BufferPtr content, int64_t ttl)
+  {
+    if (!key || !content || !content->Data() || content->Size() == 0)
+    {
+      return false;
+    }
+
+
+    Json::Value json;
+    Json::Reader reader;
+    if (!reader.parse((char*)content->Data(), content->Size(), json, false) || !json.isObject())
+    {
+      return false;
+    }
+
+    this->UpdateTTL(key, ttl);
+    this->UpdateTimestamp(key, get_now());
+
+    int64_t expiration;
+    if (!this->GetExpiration(key, &expiration))
+    {
+      return false;
+    }
+
+    std::string keyStr;
+    auto timestamp = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now()).time_since_epoch().count();
+    keyStr = json["type"].asString() + ":" + json["name"].asString() + ":" + std::to_string(timestamp);
+
+    sha1_t digest;
+    Digest::Compute(keyStr.c_str(), keyStr.size(), digest);
+    KeyPtr fileKey = std::make_shared<Key>(digest);
+
+    FILE * file = _tfopen(this->GetFileName(fileKey, 0, expiration).c_str(), _T("wb"));
+
+    if (!file)
+    {
+      return false;
+    }
+
+    bool result = false;
+
+    if (content->Size() > 0)
+    {
+      result = fwrite(content->Data(), 1, content->Size(), file) == content->Size();
+    }
+
+    fclose(file);
+
+    return result;
+  }
 
   BufferPtr Storage::MatchQuery(std::string queryStr) const
   {
@@ -347,12 +408,14 @@ namespace kad
               Json::Reader reader;
               if (reader.parse(buf, len, target) && query.Match(target))
               {
-                if (target["type"].asString().find("log:") != 0)
+                target["_expiration"] = Json::Int(expiration);
+                target["_version"] = Json::UInt(version);
+                if (target["type"].asString().find("log:") != std::string::npos)
                 {
-                  target["_expiration"] = Json::Int(expiration);
-                  target["_version"] = Json::UInt(version);
+                  target["_key"] = Json::Value(keyname);
                 }
                 arr.append(target);
+                printf("%s\n", target.toStyledString().c_str());
               }
             }
           }

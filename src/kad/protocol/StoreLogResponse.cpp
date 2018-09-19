@@ -25,20 +25,59 @@
  * =============================================================================
  */
 
-#pragma once
-
-
-#include "protocol/Ping.h"
-#include "protocol/Pong.h"
-#include "protocol/FindNode.h"
-#include "protocol/FindNodeResponse.h"
-#include "protocol/FindValue.h"
-#include "protocol/FindValueResponse.h"
-#include "protocol/Query.h"
-#include "protocol/QueryResponse.h"
-#include "protocol/Store.h"
-#include "protocol/StoreResponse.h"
-#include "protocol/StoreLog.h"
 #include "protocol/StoreLogResponse.h"
-#include "protocol/QueryLog.h"
-#include "protocol/QueryLogResponse.h"
+
+namespace kad
+{
+  namespace protocol
+  {
+    StoreLogResponse::StoreLogResponse()
+      : Instruction(OpCode::STORE_LOG_RESPONSE)
+    {
+    }
+
+
+    bool StoreLogResponse::Serialize(IOutputStream & output) const
+    {
+      if (!this->SerializeOpCode(output))
+      {
+        return false;
+      }
+
+      return output.WriteUInt16(static_cast<uint16_t>(this->result));
+    }
+
+
+    bool StoreLogResponse::Deserialize(IInputStream & input)
+    {
+      if (!this->DeserializeOpCode(input))
+      {
+        return false;
+      }
+
+      if (input.Remainder() < sizeof(uint16_t))
+      {
+        return false;
+      }
+
+      uint16_t value = input.ReadUInt16();
+
+      if (value < static_cast<uint16_t>(ErrorCode::__MAX__))
+      {
+        this->result = static_cast<ErrorCode>(value);
+      }
+      else
+      {
+        this->result = ErrorCode::FAILED;
+      }
+
+      return true;
+    }
+
+
+    void StoreLogResponse::Print() const
+    {
+      printf("[STORE_LOG_RESPONSE] %s\n", this->result == ErrorCode::SUCCESS ? "success" : "failed");
+    }
+  }
+}

@@ -27,24 +27,72 @@
 
 #pragma once
 
+#include <vector>
+#include <set>
+#include <map>
+#include "Thread.h"
+#include "Key.h"
+#include "Contact.h"
+#include "Buffer.h"
+#include "Action.h"
+
+#include <json/json.h>
+
+
 namespace kad
 {
-  enum class OpCode
+  class QueryLogAction : public Action
   {
-    PING = 1,
-    PONG = 2,
-    STORE = 3,
-    STORE_RESPONSE = 4,
-    FIND_NODE = 5,
-    FIND_NODE_RESPONSE = 6,
-    FIND_VALUE = 7,
-    FIND_VALUE_RESPONSE = 8,
-    QUERY = 9,
-    QUERY_RESPONSE = 10,
-    STORE_LOG = 11,
-    STORE_LOG_RESPONSE = 12,
-    QUERY_LOG = 13,
-    QUERY_LOG_RESPONSE = 14,
-    __MAX__
+  public:
+
+    explicit QueryLogAction(Thread * owner, PackageDispatcher * dispatcher);
+
+    void Initialize(KeyPtr target, std::string query, const std::vector<std::pair<KeyPtr, ContactPtr>> & nodes);
+
+    bool Start() override;
+
+    BufferPtr GetResult() const;
+
+    uint64_t Version() const;
+
+    uint32_t TTL() const;
+
+    bool GetMissedNode(std::pair<KeyPtr, ContactPtr> & result) const;
+
+  private:
+
+    void SendCandidate(std::pair<KeyPtr, ContactPtr> candidate);
+
+    void OnResponse(KeyPtr key, PackagePtr request, PackagePtr response);
+
+  private:
+
+    KeyPtr target;
+
+    std::string query;
+
+    std::map<KeyPtr, std::pair<KeyPtr, ContactPtr>, KeyCompare> candidates;
+
+    std::set<KeyPtr, KeyCompare> validating;
+
+    std::map<KeyPtr, ContactPtr, KeyCompare> validated;
+
+    std::map<KeyPtr, std::pair<KeyPtr, ContactPtr>, KeyCompare> missed;
+
+    std::set<KeyPtr, KeyCompare> offline;
+
+
+    BufferPtr result;
+
+    uint64_t version = 0;
+
+    uint32_t ttl = 0;
+
+  public:
+
+    Json::Value root;
+
+    uint32_t limit;
+
   };
 }

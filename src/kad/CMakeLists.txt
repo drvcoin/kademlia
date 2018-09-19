@@ -47,7 +47,9 @@ add_library(
 	EventLoop.cpp
 	FindNodeAction.cpp
 	FindValueAction.cpp
-  QueryAction.cpp
+	QueryAction.cpp
+	QueryLogAction.cpp
+	StoreLogAction.cpp
 	IndexQuery.cpp
 	IInputStream.cpp
 	InstructionSerializer.cpp
@@ -72,8 +74,12 @@ add_library(
 	protocol/Pong.cpp
 	protocol/Store.cpp
 	protocol/StoreResponse.cpp
-  protocol/Query.cpp
-  protocol/QueryResponse.cpp
+	protocol/StoreLog.cpp
+	protocol/StoreLogResponse.cpp
+	protocol/Query.cpp
+	protocol/QueryResponse.cpp
+	protocol/QueryLog.cpp
+	protocol/QueryLogResponse.cpp
 )
 
 include_directories(${PROJECT_SOURCE_DIR})

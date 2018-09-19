@@ -27,18 +27,53 @@
 
 #pragma once
 
+#include <vector>
+#include <map>
+#include "Key.h"
+#include "Contact.h"
+#include "Buffer.h"
+#include "Action.h"
 
-#include "protocol/Ping.h"
-#include "protocol/Pong.h"
-#include "protocol/FindNode.h"
-#include "protocol/FindNodeResponse.h"
-#include "protocol/FindValue.h"
-#include "protocol/FindValueResponse.h"
-#include "protocol/Query.h"
-#include "protocol/QueryResponse.h"
-#include "protocol/Store.h"
-#include "protocol/StoreResponse.h"
-#include "protocol/StoreLog.h"
-#include "protocol/StoreLogResponse.h"
-#include "protocol/QueryLog.h"
-#include "protocol/QueryLogResponse.h"
+namespace kad
+{
+  class StoreLogAction : public Action
+  {
+  public:
+
+    explicit StoreLogAction(Thread * owner, PackageDispatcher * dispatcher);
+
+    void Initialize(const std::vector<std::pair<KeyPtr, ContactPtr>> & nodes, KeyPtr key, uint64_t version, BufferPtr data, uint32_t ttl, bool original);
+
+    bool Start() override;
+
+    bool GetResult() const;
+
+    bool IsOutOfDate() const;
+
+  private:
+
+    void Send(std::pair<KeyPtr, ContactPtr> node);
+
+    void OnResponse(KeyPtr key, PackagePtr request, PackagePtr response);
+
+  private:
+
+    KeyPtr key;
+
+    uint64_t version = 0;
+
+    BufferPtr data;
+
+    uint32_t ttl = 0;
+
+    bool original = false;
+
+    std::map<KeyPtr, ContactPtr, KeyCompare> targets;
+
+    std::set<KeyPtr, KeyCompare> processing;
+
+    bool result = false;
+
+    bool outOfDate = false;
+  };
+}

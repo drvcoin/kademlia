@@ -27,18 +27,44 @@
 
 #pragma once
 
+#include "Buffer.h"
+#include "Instruction.h"
 
-#include "protocol/Ping.h"
-#include "protocol/Pong.h"
-#include "protocol/FindNode.h"
-#include "protocol/FindNodeResponse.h"
-#include "protocol/FindValue.h"
-#include "protocol/FindValueResponse.h"
-#include "protocol/Query.h"
-#include "protocol/QueryResponse.h"
-#include "protocol/Store.h"
-#include "protocol/StoreResponse.h"
-#include "protocol/StoreLog.h"
-#include "protocol/StoreLogResponse.h"
-#include "protocol/QueryLog.h"
-#include "protocol/QueryLogResponse.h"
+namespace kad
+{
+  namespace protocol
+  {
+    class QueryLogResponse : public Instruction
+    {
+    public:
+
+      QueryLogResponse();
+
+      bool Serialize(IOutputStream & output) const override;
+
+      bool Deserialize(IInputStream & input) override;
+
+      void Print() const override;
+
+      void SetData(BufferPtr val)     { this->data = val; }
+
+      BufferPtr Data() const          { return this->data; }
+
+      void SetVersion(uint64_t val)   { this->version = val; }
+
+      uint64_t Version() const        { return this->version; }
+
+      void SetTTL(uint32_t val)       { this->ttl = val; }
+
+      uint32_t TTL() const            { return this->ttl; }
+
+    private:
+
+      BufferPtr data;
+
+      uint64_t version;
+
+      uint32_t ttl;
+    };
+  }
+}
