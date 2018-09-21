@@ -562,36 +562,47 @@ namespace kad
       return;
     }
 
+    std::vector<std::pair<KeyPtr, ContactPtr>> nodes;
+    this->kBuckets->FindClosestContacts(target, nodes);
 
-    auto storage = Storage::Log();
-    auto buffer = storage->MatchQuery(query);
+    bool searchLocal = false;
 
-    // TODO: Have better check that current node is log storage
-    if (buffer)
+    if (nodes.size() > 0)
     {
-      auto rtn = dynamic_cast<AsyncResult<BufferPtr> *>(result.get());
-      if (rtn)
-      {
-        rtn->Complete(buffer);
-      }
-      else if (result)
-      {
-        result->Complete();
-      }
+      Key localDistance = target->GetDistance(*Config::NodeId());
+      Key closestDistance = target->GetDistance(*(nodes[0]).first);
 
-      if (handler)
-      {
-        handler(result);
-      }
-
-      return;
+      searchLocal = localDistance <= closestDistance;
+    }
+    else
+    {
+      searchLocal = true;
     }
 
+    if (searchLocal)
+    {
+      auto storage = Storage::Log();
+      auto buffer = storage->MatchQuery(query);
+      if (buffer)
+      {
+        auto rtn = dynamic_cast<AsyncResult<BufferPtr> *>(result.get());
+        if (rtn)
+        {
+          rtn->Complete(buffer);
+        }
+        else if (result)
+        {
+          result->Complete();
+        }
 
-    std::vector<std::pair<KeyPtr, ContactPtr>> nodes;
+        if (handler)
+        {
+          handler(result);
+        }
 
-    this->kBuckets->FindClosestContacts(target, nodes, true);
-
+        return;
+      }
+    }
 
     auto action = std::unique_ptr<QueryLogAction>(new QueryLogAction(this->thread.get(), this->dispatcher.get()));
 
@@ -617,8 +628,6 @@ namespace kad
 
         if (buffer)
         {
-          // TODO: Replicate logs
-/*
           std::pair<KeyPtr, ContactPtr> missed;
 
           if (action->GetMissedNode(missed))
@@ -627,16 +636,16 @@ namespace kad
 
             nodes.emplace_back(std::move(missed));
 
-            auto store = std::unique_ptr<StoreAction>(new StoreAction(this->thread.get(), this->dispatcher.get()));
+            auto store = std::unique_ptr<StoreLogAction>(new StoreLogAction(this->thread.get(), this->dispatcher.get()));
 
-            store->Initialize(nodes, target, action->Version(), buffer, action->TTL(), false);
+            store->Initialize(nodes, target, 0, buffer, 0, false);
 
             if (store->Start())
             {
               store.release();
             }
+
           }
-*/
         }
 
         if (handler)
@@ -1109,8 +1118,11 @@ namespace kad
       }
     }
 
-    uint64_t version = 1;
-    int64_t ttl = 864000;
+    uint64_t version;
+    int64_t ttl;
+
+    storage->GetVersion(reqInstr->Key(), &version);
+    storage->GetTTL(reqInstr->Key(), &ttl);
 
     if (buffer)
     {
@@ -1143,7 +1155,6 @@ namespace kad
     storage->GetVersion(reqInstr->Key(), &version);
     storage->GetTTL(reqInstr->Key(), &ttl);
 
-
     if (buffer)
     {
       protocol::QueryLogResponse * resInstr = new protocol::QueryLogResponse();
@@ -1153,6 +1164,10 @@ namespace kad
       resInstr->SetTTL(ttl);
 
       this->dispatcher->Send(std::make_shared<Package>(Package::PackageType::Response, Config::NodeId(), request->Id(), from, std::unique_ptr<Instruction>(resInstr)));
+    }
+    else
+    {
+      this->OnRequestFindNode(from, request);
     }
   }
 

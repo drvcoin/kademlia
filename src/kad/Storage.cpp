@@ -319,48 +319,99 @@ namespace kad
       return false;
     }
 
-
     Json::Value json;
     Json::Reader reader;
-    if (!reader.parse((char*)content->Data(), content->Size(), json, false) || !json.isObject())
+    if (!reader.parse((char*)content->Data(), content->Size(), json, false))
     {
       return false;
     }
 
-    this->UpdateTTL(key, ttl);
-    this->UpdateTimestamp(key, get_now());
-
-    int64_t expiration;
-    if (!this->GetExpiration(key, &expiration))
+    if (json.isObject())
     {
-      return false;
+      this->UpdateTTL(key, ttl);
+      this->UpdateTimestamp(key, get_now());
+
+      int64_t expiration;
+      if (!this->GetExpiration(key, &expiration))
+      {
+        return false;
+      }
+
+      std::string keyStr;
+      auto timestamp = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now()).time_since_epoch().count();
+      keyStr = json["type"].asString() + ":" + json["name"].asString() + ":" + std::to_string(timestamp);
+
+      sha1_t digest;
+      Digest::Compute(keyStr.c_str(), keyStr.size(), digest);
+      KeyPtr fileKey = std::make_shared<Key>(digest);
+
+      FILE * file = _tfopen(this->GetFileName(fileKey, 0, expiration).c_str(), _T("wb"));
+
+      if (!file)
+      {
+        return false;
+      }
+
+      bool result = false;
+
+      if (content->Size() > 0)
+      {
+        result = fwrite(content->Data(), 1, content->Size(), file) == content->Size();
+      }
+
+      fclose(file);
+
+      return result;
     }
-
-    std::string keyStr;
-    auto timestamp = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now()).time_since_epoch().count();
-    keyStr = json["type"].asString() + ":" + json["name"].asString() + ":" + std::to_string(timestamp);
-
-    sha1_t digest;
-    Digest::Compute(keyStr.c_str(), keyStr.size(), digest);
-    KeyPtr fileKey = std::make_shared<Key>(digest);
-
-    FILE * file = _tfopen(this->GetFileName(fileKey, 0, expiration).c_str(), _T("wb"));
-
-    if (!file)
+    else if (json.isArray())
     {
-      return false;
+      for (Json::Value::ArrayIndex i = 0; i != json.size(); i++)
+      {
+        if (json[i].isObject())
+        {
+          KeyPtr fileKey = std::make_shared<Key>();
+          std::string key = json[i]["_key"].asString();
+          fileKey->FromString(key.c_str());
+          int64_t expiration = json[i]["_expiration"].asInt();
+          std::string fileName = this->GetFileName(fileKey, 0, expiration);
+
+          struct stat stat_buf;
+          if (_tstat(fileName.c_str(), &stat_buf) == 0)
+          {
+            continue;
+          }
+
+          FILE * file = _tfopen(fileName.c_str(), _T("wb"));
+          if (!file)
+          {
+            return false;
+          }
+
+          json[i].removeMember("_key");
+          json[i].removeMember("_version");
+          json[i].removeMember("_expiration");
+
+          Json::FastWriter writer;
+          auto jsonStr = writer.write(json[i]);
+
+          bool ok;
+          ok = fwrite((uint8_t*)jsonStr.c_str(), 1, jsonStr.size(), file) == jsonStr.size();
+
+          fclose(file);
+
+          if (!ok)
+          {
+            return false;
+          }
+        }
+        else
+        {
+          return false;
+        }
+      }
+      return true;
     }
-
-    bool result = false;
-
-    if (content->Size() > 0)
-    {
-      result = fwrite(content->Data(), 1, content->Size(), file) == content->Size();
-    }
-
-    fclose(file);
-
-    return result;
+    return false;
   }
 
   BufferPtr Storage::MatchQuery(std::string queryStr) const
@@ -415,7 +466,6 @@ namespace kad
                   target["_key"] = Json::Value(keyname);
                 }
                 arr.append(target);
-                printf("%s\n", target.toStyledString().c_str());
               }
             }
           }
