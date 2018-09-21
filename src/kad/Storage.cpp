@@ -372,8 +372,11 @@ namespace kad
           KeyPtr fileKey = std::make_shared<Key>();
           std::string key = json[i]["_key"].asString();
           fileKey->FromString(key.c_str());
+
           int64_t expiration = json[i]["_expiration"].asInt();
-          std::string fileName = this->GetFileName(fileKey, 0, expiration);
+          int64_t fileNameExpiration = expiration - std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now()).time_since_epoch().count() + get_now();
+
+          std::string fileName = this->GetFileName(fileKey, 0, fileNameExpiration);
 
           struct stat stat_buf;
           if (_tstat(fileName.c_str(), &stat_buf) == 0)
@@ -459,7 +462,10 @@ namespace kad
               Json::Reader reader;
               if (reader.parse(buf, len, target) && query.Match(target))
               {
-                target["_expiration"] = Json::Int(expiration);
+                int64_t ttl = expiration - get_now();
+                auto timestamp = ttl + std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now()).time_since_epoch().count();
+
+                target["_expiration"] = Json::Int(timestamp);
                 target["_version"] = Json::UInt(version);
                 if (target["type"].asString().find("log:") != std::string::npos)
                 {
