@@ -70,7 +70,7 @@ namespace kad
 
   Kademlia::~Kademlia()
   {
-    //this->SaveBuckets();
+    this->SaveBuckets();
   }
 
 
@@ -229,7 +229,7 @@ namespace kad
 
       this->OnReplicate(targets, 0);
 
-      //SaveBuckets();
+      SaveBuckets();
     }
   }
 
