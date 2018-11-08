@@ -83,5 +83,6 @@ add_library(
 )
 
 include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${ROOT}/include)
 include_directories(${ROOT_DRIVE}/src/jsoncpp/include)
 

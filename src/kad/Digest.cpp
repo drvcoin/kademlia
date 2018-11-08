@@ -25,7 +25,7 @@
  * =============================================================================
  */
 
-#include "Digest.h"
+#include <drive/kad/Digest.h>
 
 #include <string.h>
 #include <stdio.h>

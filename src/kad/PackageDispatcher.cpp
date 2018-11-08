@@ -27,12 +27,12 @@
 
 #include <tuple>
 #include <vector>
-#include "BufferedOutputStream.h"
-#include "BufferedInputStream.h"
-#include "TransportFactory.h"
-#include "Timer.h"
-#include "Config.h"
-#include "PackageDispatcher.h"
+#include <drive/kad/BufferedOutputStream.h>
+#include <drive/kad/BufferedInputStream.h>
+#include <drive/kad/TransportFactory.h>
+#include <drive/kad/Timer.h>
+#include <drive/kad/Config.h>
+#include <drive/kad/PackageDispatcher.h>
 
 namespace kad
 {

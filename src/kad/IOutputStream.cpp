@@ -25,8 +25,8 @@
  * =============================================================================
  */
 
-#include "IOutputStream.h"
-#include "EndianUtil.h"
+#include <drive/kad/IOutputStream.h>
+#include <drive/kad/EndianUtil.h>
 
 namespace kad
 {

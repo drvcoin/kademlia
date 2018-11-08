@@ -36,16 +36,16 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "Contact.h"
-#include "Config.h"
-#include "TransportFactory.h"
-#include "LinuxFileTransport.h"
-#include "TcpTransport.h"
-#include "Digest.h"
-#include "Kademlia.h"
-
 #include <arpa/inet.h>
 #include <json/json.h>
+
+#include <drive/kad/Contact.h>
+#include <drive/kad/Config.h>
+#include <drive/kad/TransportFactory.h>
+#include <drive/kad/LinuxFileTransport.h>
+#include <drive/kad/TcpTransport.h>
+#include <drive/kad/Digest.h>
+#include <drive/kad/Kademlia.h>
 
 using namespace kad;
 

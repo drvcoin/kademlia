@@ -32,16 +32,16 @@
 #include <vector>
 #include <sstream>
 #include <iterator>
-#include "Config.h"
-#include "Instruction.h"
+#include <arpa/inet.h>
 #include "protocol/Ping.h"
 #include "protocol/Pong.h"
-#include "PackageDispatcher.h"
-#include "TransportFactory.h"
-#include "LinuxFileTransport.h"
-#include "TcpTransport.h"
 
-#include <arpa/inet.h>
+#include <drive/kad/Config.h>
+#include <drive/kad/Instruction.h>
+#include <drive/kad/PackageDispatcher.h>
+#include <drive/kad/TransportFactory.h>
+#include <drive/kad/LinuxFileTransport.h>
+#include <drive/kad/TcpTransport.h>
 
 
 using namespace kad;

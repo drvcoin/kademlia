@@ -36,12 +36,12 @@
 #include <dirent.h>
 #include <linux/limits.h>
 #include <atomic>
-#include "Config.h"
-#include "PlatformUtils.h"
-#include "TcpTransport.h"
-
-#include<sys/socket.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
+
+#include <drive/kad/Config.h>
+#include <drive/kad/PlatformUtils.h>
+#include <drive/kad/TcpTransport.h>
 
 
 namespace kad

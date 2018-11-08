@@ -27,8 +27,8 @@
 
 #pragma once
 
-#include "Key.h"
-#include "Instruction.h"
+#include <drive/kad/Key.h>
+#include <drive/kad/Instruction.h>
 
 namespace kad
 {

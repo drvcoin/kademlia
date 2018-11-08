@@ -39,7 +39,7 @@ add_executable(
 )
 
 
-include_directories(${ROOT}/src/kad)
+include_directories(${ROOT}/include)
 include_directories(${ROOT_DRIVE}/src/jsoncpp/include)
 
 bd_lib(test-dht kad ${LIBDIR}/libkad.a)

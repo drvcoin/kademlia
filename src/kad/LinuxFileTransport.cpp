@@ -36,9 +36,9 @@
 #include <dirent.h>
 #include <linux/limits.h>
 #include <atomic>
-#include "Config.h"
-#include "PlatformUtils.h"
-#include "LinuxFileTransport.h"
+#include <drive/kad/Config.h>
+#include <drive/kad/PlatformUtils.h>
+#include <drive/kad/LinuxFileTransport.h>
 
 namespace kad
 {

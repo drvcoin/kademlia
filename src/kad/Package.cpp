@@ -25,8 +25,8 @@
  * =============================================================================
  */
 
-#include "InstructionSerializer.h"
-#include "Package.h"
+#include <drive/kad/InstructionSerializer.h>
+#include <drive/kad/Package.h>
 
 namespace kad
 {

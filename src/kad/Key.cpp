@@ -31,7 +31,7 @@
 
 #include <assert.h>
 #include <string.h>
-#include "Key.h"
+#include <drive/kad/Key.h>
 
 namespace kad
 {

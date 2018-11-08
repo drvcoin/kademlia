@@ -32,7 +32,7 @@
 #include <arpa/inet.h>
 #endif
 
-#include "BufferedInputStream.h"
+#include <drive/kad/BufferedInputStream.h>
 
 namespace kad
 {

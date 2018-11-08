@@ -40,9 +40,9 @@
 #include "protocol/QueryLog.h"
 #include "protocol/QueryLogResponse.h"
 
-#include "IOutputStream.h"
-#include "IInputStream.h"
-#include "InstructionSerializer.h"
+#include <drive/kad/IOutputStream.h>
+#include <drive/kad/IInputStream.h>
+#include <drive/kad/InstructionSerializer.h>
 
 namespace kad
 {

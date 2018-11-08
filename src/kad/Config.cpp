@@ -27,7 +27,7 @@
 
 #include <ctime>
 #include <cstdlib>
-#include "Config.h"
+#include <drive/kad/Config.h>
 
 namespace kad
 {

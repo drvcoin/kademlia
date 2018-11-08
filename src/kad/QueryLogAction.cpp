@@ -28,11 +28,11 @@
 #include "protocol/QueryLog.h"
 #include "protocol/QueryLogResponse.h"
 #include "protocol/FindNodeResponse.h"
-#include "Package.h"
-#include "Config.h"
-#include "KBuckets.h"
-#include "PackageDispatcher.h"
-#include "QueryLogAction.h"
+#include <drive/kad/Package.h>
+#include <drive/kad/Config.h>
+#include <drive/kad/KBuckets.h>
+#include <drive/kad/PackageDispatcher.h>
+#include <drive/kad/QueryLogAction.h>
 
 namespace kad
 {

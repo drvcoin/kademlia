@@ -29,9 +29,9 @@
 
 #include <utility>
 #include <vector>
-#include "Key.h"
-#include "Contact.h"
-#include "Instruction.h"
+#include <drive/kad/Key.h>
+#include <drive/kad/Contact.h>
+#include <drive/kad/Instruction.h>
 
 namespace kad
 {

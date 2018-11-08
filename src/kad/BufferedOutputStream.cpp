@@ -25,7 +25,7 @@
  * =============================================================================
  */
 
-#include "BufferedOutputStream.h"
+#include <drive/kad/BufferedOutputStream.h>
 
 #include <memory.h>
 #include <stdlib.h>

@@ -28,11 +28,11 @@
 #include "protocol/FindValue.h"
 #include "protocol/FindValueResponse.h"
 #include "protocol/FindNodeResponse.h"
-#include "Package.h"
-#include "Config.h"
-#include "KBuckets.h"
-#include "PackageDispatcher.h"
-#include "FindValueAction.h"
+#include <drive/kad/Package.h>
+#include <drive/kad/Config.h>
+#include <drive/kad/KBuckets.h>
+#include <drive/kad/PackageDispatcher.h>
+#include <drive/kad/FindValueAction.h>
 
 namespace kad
 {

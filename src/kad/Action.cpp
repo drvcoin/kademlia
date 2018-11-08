@@ -26,9 +26,9 @@
  */
 
 #include <assert.h>
-#include "Thread.h"
-#include "PackageDispatcher.h"
-#include "Action.h"
+#include <drive/kad/Thread.h>
+#include <drive/kad/PackageDispatcher.h>
+#include <drive/kad/Action.h>
 
 namespace kad
 {

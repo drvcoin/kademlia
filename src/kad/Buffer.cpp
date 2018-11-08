@@ -26,7 +26,7 @@
  */
 
 #include <string.h>
-#include "Buffer.h"
+#include <drive/kad/Buffer.h>
 
 namespace kad
 {

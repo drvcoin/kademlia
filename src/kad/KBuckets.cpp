@@ -25,7 +25,7 @@
  * =============================================================================
  */
 
-#include "KBuckets.h"
+#include <drive/kad/KBuckets.h>
 
 namespace kad
 {

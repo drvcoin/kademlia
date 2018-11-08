@@ -25,13 +25,13 @@
  * =============================================================================
  */
 
-#include "Thread.h"
-#include "PackageDispatcher.h"
-#include "Config.h"
-#include "Package.h"
+#include <drive/kad/Thread.h>
+#include <drive/kad/PackageDispatcher.h>
+#include <drive/kad/Config.h>
+#include <drive/kad/Package.h>
+#include <drive/kad/StoreLogAction.h>
 #include "protocol/StoreLog.h"
 #include "protocol/StoreLogResponse.h"
-#include "StoreLogAction.h"
 
 
 namespace kad

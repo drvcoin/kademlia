@@ -39,10 +39,10 @@
 #include <sys/stat.h>
 #include <limits>
 #include <json/json.h>
-#include "Config.h"
-#include "IndexQuery.h"
-#include "Storage.h"
-#include "Digest.h"
+#include <drive/kad/Config.h>
+#include <drive/kad/IndexQuery.h>
+#include <drive/kad/Storage.h>
+#include <drive/kad/Digest.h>
 
 
 namespace kad

@@ -26,8 +26,8 @@
  */
 
 #include <stdio.h>
-#include "IInputStream.h"
-#include "IOutputStream.h"
+#include <drive/kad/IInputStream.h>
+#include <drive/kad/IOutputStream.h>
 #include "protocol/Ping.h"
 
 namespace kad

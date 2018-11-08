@@ -27,8 +27,8 @@
 
 #pragma once
 
-#include "Buffer.h"
-#include "Instruction.h"
+#include <drive/kad/Buffer.h>
+#include <drive/kad/Instruction.h>
 
 namespace kad
 {

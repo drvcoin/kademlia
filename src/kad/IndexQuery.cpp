@@ -27,7 +27,7 @@
 
 #include <algorithm>
 #include <json/json.h>
-#include "IndexQuery.h"
+#include <drive/kad/IndexQuery.h>
 
 namespace kad
 {

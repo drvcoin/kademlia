@@ -26,7 +26,7 @@
  */
 
 #include <string.h>
-#include "Thread.h"
+#include <drive/kad/Thread.h>
 
 namespace kad
 {

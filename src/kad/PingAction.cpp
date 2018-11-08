@@ -27,10 +27,10 @@
 
 #include "protocol/Ping.h"
 #include "protocol/Pong.h"
-#include "Thread.h"
-#include "PackageDispatcher.h"
-#include "Config.h"
-#include "PingAction.h"
+#include <drive/kad/Thread.h>
+#include <drive/kad/PackageDispatcher.h>
+#include <drive/kad/Config.h>
+#include <drive/kad/PingAction.h>
 
 
 namespace kad
