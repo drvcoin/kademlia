@@ -26,8 +26,8 @@
  */
 
 #include <stdio.h>
-#include <drive/kad/IInputStream.h>
-#include <drive/kad/IOutputStream.h>
+#include <drive/common/IInputStream.h>
+#include <drive/common/IOutputStream.h>
 #include "protocol/Ping.h"
 
 namespace kad
@@ -40,13 +40,13 @@ namespace kad
     }
 
 
-    bool Ping::Serialize(IOutputStream & output) const
+    bool Ping::Serialize(bdfs::IOutputStream & output) const
     {
       return this->SerializeOpCode(output);
     }
 
 
-    bool Ping::Deserialize(IInputStream & input) 
+    bool Ping::Deserialize(bdfs::IInputStream & input) 
     {
       return this->DeserializeOpCode(input);
     }

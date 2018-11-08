@@ -41,9 +41,11 @@ add_executable(
 
 include_directories(${ROOT}/include)
 include_directories(${ROOT_DRIVE}/src/jsoncpp/include)
+include_directories(${ROOT_DRIVE}/include)
 
 bd_lib(test-dht kad ${LIBDIR}/libkad.a)
 bd_lib(test-dht jsoncpp ${ROOT_DRIVE}/out/lib/libjsoncpp.a)
+bd_lib(test-dht bdfs-static ${ROOT_DRIVE}/out/lib/libbdfs.a)
 
 bd_sys_lib(test-dht crypto)
 bd_use_pthread(test-dht)

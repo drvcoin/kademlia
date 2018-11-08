@@ -27,9 +27,9 @@
 
 #pragma once
 
-#include "IInputStream.h"
-#include "IOutputStream.h"
-#include "OpCode.h"
+#include <drive/common/IInputStream.h>
+#include <drive/common/IOutputStream.h>
+#include <drive/kad/OpCode.h>
 
 namespace kad
 {
@@ -46,20 +46,20 @@ namespace kad
 
     OpCode Code() const     { return this->code; }
 
-    virtual bool Serialize(IOutputStream & output) const = 0;
+    virtual bool Serialize(bdfs::IOutputStream & output) const = 0;
 
-    virtual bool Deserialize(IInputStream & input) = 0;
+    virtual bool Deserialize(bdfs::IInputStream & input) = 0;
 
     virtual void Print() const = 0;
 
   protected:
 
-    inline bool SerializeOpCode(IOutputStream & output) const
+    inline bool SerializeOpCode(bdfs::IOutputStream & output) const
     {
       return output.WriteUInt16(static_cast<uint16_t>(this->code));
     }
 
-    inline bool DeserializeOpCode(IInputStream & input)
+    inline bool DeserializeOpCode(bdfs::IInputStream & input)
     {
       return input.Remainder() >= sizeof(uint16_t) && input.ReadUInt16() == static_cast<uint16_t>(this->code);
     }

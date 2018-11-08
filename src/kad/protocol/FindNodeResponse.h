@@ -49,9 +49,9 @@ namespace kad
 
       ~FindNodeResponse() override = default;
 
-      bool Serialize(IOutputStream & output) const override;
+      bool Serialize(bdfs::IOutputStream & output) const override;
 
-      bool Deserialize(IInputStream & input) override;
+      bool Deserialize(bdfs::IInputStream & input) override;
 
       bool AddNode(KeyPtr key, ContactPtr contact);
 

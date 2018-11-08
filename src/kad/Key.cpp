@@ -195,13 +195,13 @@ namespace kad
   }
 
 
-  bool Key::Serialize(IOutputStream & output) const
+  bool Key::Serialize(bdfs::IOutputStream & output) const
   {
     return output.Write(this->key, KEY_LEN) == KEY_LEN;
   }
 
 
-  bool Key::Deserialize(IInputStream & input)
+  bool Key::Deserialize(bdfs::IInputStream & input)
   {
     if (input.Remainder() < KEY_LEN)
     {

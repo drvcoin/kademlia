@@ -37,7 +37,7 @@ namespace kad
       this->code = OpCode::QUERY_LOG;
     }
 
-    bool QueryLog::Serialize(IOutputStream & output) const
+    bool QueryLog::Serialize(bdfs::IOutputStream & output) const
     {
       bool r = FindNode::Serialize(output);
 
@@ -48,7 +48,7 @@ namespace kad
     }
 
 
-    bool QueryLog::Deserialize(IInputStream & input)
+    bool QueryLog::Deserialize(bdfs::IInputStream & input)
     {
       bool r = FindNode::Deserialize(input);
 

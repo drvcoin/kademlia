@@ -30,10 +30,10 @@
 #include <vector>
 #include <set>
 #include <map>
-#include "Thread.h"
-#include "Key.h"
-#include "Contact.h"
-#include "Action.h"
+#include <drive/kad/Thread.h>
+#include <drive/kad/Key.h>
+#include <drive/kad/Contact.h>
+#include <drive/kad/Action.h>
 
 namespace kad
 {

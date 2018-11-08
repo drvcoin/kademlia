@@ -26,8 +26,8 @@
  */
 
 #include <stdio.h>
-#include <drive/kad/IInputStream.h>
-#include <drive/kad/IOutputStream.h>
+#include <drive/common/IInputStream.h>
+#include <drive/common/IOutputStream.h>
 #include "protocol/Pong.h"
 
 namespace kad
@@ -40,13 +40,13 @@ namespace kad
     }
 
 
-    bool Pong::Serialize(IOutputStream & output) const
+    bool Pong::Serialize(bdfs::IOutputStream & output) const
     {
       return this->SerializeOpCode(output);
     }
 
 
-    bool Pong::Deserialize(IInputStream & input) 
+    bool Pong::Deserialize(bdfs::IInputStream & input) 
     {
       return this->DeserializeOpCode(input);
     }

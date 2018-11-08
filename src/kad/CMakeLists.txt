@@ -39,8 +39,6 @@ add_library(
 	AsyncResult.cpp
 	Bucket.cpp
 	Buffer.cpp
-	BufferedInputStream.cpp
-	BufferedOutputStream.cpp
 	Config.cpp
 	Timer.cpp
 	Digest.cpp
@@ -51,9 +49,7 @@ add_library(
 	QueryLogAction.cpp
 	StoreLogAction.cpp
 	IndexQuery.cpp
-	IInputStream.cpp
 	InstructionSerializer.cpp
-	IOutputStream.cpp
 	Kademlia.cpp
 	KBuckets.cpp
 	Key.cpp
@@ -85,4 +81,5 @@ add_library(
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${ROOT}/include)
 include_directories(${ROOT_DRIVE}/src/jsoncpp/include)
+include_directories(${ROOT_DRIVE}/include)
 

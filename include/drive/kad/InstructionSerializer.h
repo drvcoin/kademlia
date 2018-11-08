@@ -27,21 +27,21 @@
 
 #pragma once
 
-#include "OpCode.h"
+#include <drive/kad/OpCode.h>
+#include <drive/common/IInputStream.h>
+#include <drive/common/IOutputStream.h>
 
 namespace kad
 {
   class Instruction;
-  class IOutputStream;
-  class IInputStream;
 
   class InstructionSerializer
   {
   public:
 
-    static bool Serialize(IOutputStream & output, const Instruction * instr);
+    static bool Serialize(bdfs::IOutputStream & output, const Instruction * instr);
 
-    static Instruction * Deserialize(IInputStream & input);
+    static Instruction * Deserialize(bdfs::IInputStream & input);
 
   private:
 

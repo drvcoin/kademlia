@@ -29,10 +29,10 @@
 
 #include <vector>
 #include <map>
-#include "Key.h"
-#include "Contact.h"
-#include "Buffer.h"
-#include "Action.h"
+#include <drive/kad/Key.h>
+#include <drive/kad/Contact.h>
+#include <drive/kad/Buffer.h>
+#include <drive/kad/Action.h>
 
 namespace kad
 {

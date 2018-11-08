@@ -27,9 +27,9 @@
 
 #pragma once
 
-#include "Contact.h"
-#include "Package.h"
-#include "Action.h"
+#include <drive/kad/Contact.h>
+#include <drive/kad/Package.h>
+#include <drive/kad/Action.h>
 
 namespace kad
 {

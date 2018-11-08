@@ -40,13 +40,11 @@
 #include "protocol/QueryLog.h"
 #include "protocol/QueryLogResponse.h"
 
-#include <drive/kad/IOutputStream.h>
-#include <drive/kad/IInputStream.h>
 #include <drive/kad/InstructionSerializer.h>
 
 namespace kad
 {
-  bool InstructionSerializer::Serialize(IOutputStream & output, const Instruction * instr)
+  bool InstructionSerializer::Serialize(bdfs::IOutputStream & output, const Instruction * instr)
   {
     if (!instr)
     {
@@ -57,7 +55,7 @@ namespace kad
   }
 
 
-  Instruction * InstructionSerializer::Deserialize(IInputStream & input)
+  Instruction * InstructionSerializer::Deserialize(bdfs::IInputStream & input)
   {
     if (input.Remainder() < sizeof(uint16_t))
     {

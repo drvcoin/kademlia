@@ -38,7 +38,7 @@ namespace kad
     }
 
 
-    bool Store::Serialize(IOutputStream & output) const
+    bool Store::Serialize(bdfs::IOutputStream & output) const
     {
       if (!this->key || !this->data)
       {
@@ -69,7 +69,7 @@ namespace kad
     }
 
 
-    bool Store::Deserialize(IInputStream & input)
+    bool Store::Deserialize(bdfs::IInputStream & input)
     {
       if (!this->DeserializeOpCode(input))
       {

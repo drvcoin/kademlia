@@ -37,7 +37,7 @@ namespace kad
     }
 
 
-    bool StoreLogResponse::Serialize(IOutputStream & output) const
+    bool StoreLogResponse::Serialize(bdfs::IOutputStream & output) const
     {
       if (!this->SerializeOpCode(output))
       {
@@ -48,7 +48,7 @@ namespace kad
     }
 
 
-    bool StoreLogResponse::Deserialize(IInputStream & input)
+    bool StoreLogResponse::Deserialize(bdfs::IInputStream & input)
     {
       if (!this->DeserializeOpCode(input))
       {

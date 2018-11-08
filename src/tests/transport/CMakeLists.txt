@@ -42,7 +42,9 @@ add_executable(
 include_directories(${ROOT}/include)
 include_directories(${ROOT}/src/kad)
 include_directories(${ROOT_DRIVE}/src/jsoncpp/include)
+include_directories(${ROOT_DRIVE}/include)
 
 bd_lib(test-transport kad ${LIBDIR}/libkad.a)
+bd_lib(test-transport bdfs-static ${ROOT_DRIVE}/out/lib/libbdfs.a)
 bd_use_pthread(test-transport)
 

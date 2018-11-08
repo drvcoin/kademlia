@@ -39,7 +39,7 @@ namespace kad
     }
 
 
-    bool QueryResponse::Serialize(IOutputStream & output) const
+    bool QueryResponse::Serialize(bdfs::IOutputStream & output) const
     {
       if (!this->data)
       {
@@ -66,7 +66,7 @@ namespace kad
     }
 
 
-    bool QueryResponse::Deserialize(IInputStream & input)
+    bool QueryResponse::Deserialize(bdfs::IInputStream & input)
     {
       if (!this->DeserializeOpCode(input))
       {

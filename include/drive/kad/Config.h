@@ -27,9 +27,9 @@
 
 #pragma once
 
-#include "Key.h"
-#include "Contact.h"
-#include "PlatformUtils.h"
+#include <drive/kad/Key.h>
+#include <drive/kad/Contact.h>
+#include <drive/kad/PlatformUtils.h>
 
 namespace kad
 {

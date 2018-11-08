@@ -29,10 +29,10 @@
 
 #include <atomic>
 #include <memory>
-#include "IOutputStream.h"
-#include "Contact.h"
-#include "Key.h"
-#include "Instruction.h"
+#include <drive/common/IOutputStream.h>
+#include <drive/kad/Contact.h>
+#include <drive/kad/Key.h>
+#include <drive/kad/Instruction.h>
 
 namespace kad
 {
@@ -63,9 +63,9 @@ namespace kad
 
     PackageType Type() const              { return this->type; }
 
-    bool Serialize(IOutputStream & output) const;
+    bool Serialize(bdfs::IOutputStream & output) const;
 
-    static std::unique_ptr<Package> Deserialize(ContactPtr sender, IInputStream & input);
+    static std::unique_ptr<Package> Deserialize(ContactPtr sender, bdfs::IInputStream & input);
 
   private:
 

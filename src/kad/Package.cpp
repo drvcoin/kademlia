@@ -53,7 +53,7 @@ namespace kad
   }
 
 
-  bool Package::Serialize(IOutputStream & output) const
+  bool Package::Serialize(bdfs::IOutputStream & output) const
   {
     if (!this->instruction)
     {
@@ -72,7 +72,7 @@ namespace kad
   }
 
 
-  std::unique_ptr<Package> Package::Deserialize(ContactPtr sender, IInputStream & input)
+  std::unique_ptr<Package> Package::Deserialize(ContactPtr sender, bdfs::IInputStream & input)
   {
     if (!sender || input.Remainder() < sizeof(uint8_t) * 2 + sizeof(uint16_t) || input.ReadUInt8() != 0)
     {

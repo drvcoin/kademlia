@@ -32,7 +32,7 @@
 #include <atomic>
 #include <map>
 #include <chrono>
-#include "Thread.h"
+#include <drive/kad/Thread.h>
 
 namespace kad
 {

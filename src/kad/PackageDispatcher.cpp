@@ -27,8 +27,8 @@
 
 #include <tuple>
 #include <vector>
-#include <drive/kad/BufferedOutputStream.h>
-#include <drive/kad/BufferedInputStream.h>
+#include <drive/common/BufferedOutputStream.h>
+#include <drive/common/BufferedInputStream.h>
 #include <drive/kad/TransportFactory.h>
 #include <drive/kad/Timer.h>
 #include <drive/kad/Config.h>
@@ -138,7 +138,7 @@ namespace kad
     }
 #endif
 
-    BufferedOutputStream buffer;
+    bdfs::BufferedOutputStream buffer;
     if (subscription->request->Serialize(buffer))
     {
       _this->transport->Send(subscription->request->Target(), buffer.Buffer(), buffer.Offset());
@@ -162,7 +162,7 @@ namespace kad
 
     delete info;
 
-    BufferedInputStream input(buffer, size);
+    bdfs::BufferedInputStream input(buffer, size);
     PackagePtr package = Package::Deserialize(contact, input);
     delete[] buffer;
 

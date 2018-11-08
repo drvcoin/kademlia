@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "Contact.h"
+#include <drive/kad/Contact.h>
 
 namespace kad
 {

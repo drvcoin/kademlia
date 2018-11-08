@@ -31,4 +31,3 @@ project(kademlia_src)
 set(ROOT ${PROJECT_SOURCE_DIR}/..)
 
 add_subdirectory(kad)
-add_subdirectory(tests)

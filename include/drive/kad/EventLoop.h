@@ -33,7 +33,7 @@
 #include <memory>
 #include <mutex>
 #include <condition_variable>
-#include "LockFreeQueue.h"
+#include <drive/common/LockFreeQueue.h>
 
 namespace kad
 {
@@ -77,6 +77,6 @@ namespace kad
 
     std::atomic<bool> alive{false};
 
-    LockFreeQueue<EventHandlerEntry *> events;
+    bdfs::LockFreeQueue<EventHandlerEntry *> events;
   };
 }

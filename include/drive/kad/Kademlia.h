@@ -32,12 +32,12 @@
 #include <set>
 #include <vector>
 #include <functional>
-#include "Key.h"
-#include "Contact.h"
-#include "Package.h"
-#include "Buffer.h"
-#include "AsyncResult.h"
-#include "Instruction.h"
+#include <drive/kad/Key.h>
+#include <drive/kad/Contact.h>
+#include <drive/kad/Package.h>
+#include <drive/kad/Buffer.h>
+#include <drive/kad/AsyncResult.h>
+#include <drive/kad/Instruction.h>
 
 namespace kad
 {

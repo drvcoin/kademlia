@@ -31,8 +31,8 @@
 #include <map>
 #include <vector>
 #include <chrono>
-#include "Key.h"
-#include "Contact.h"
+#include <drive/kad/Key.h>
+#include <drive/kad/Contact.h>
 
 namespace kad
 {

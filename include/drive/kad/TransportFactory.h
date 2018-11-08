@@ -28,8 +28,8 @@
 #pragma once
 
 #include <memory>
-#include "ITransport.h"
-#include "Contact.h"
+#include <drive/kad/ITransport.h>
+#include <drive/kad/Contact.h>
 
 namespace kad
 {

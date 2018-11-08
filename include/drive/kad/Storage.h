@@ -29,9 +29,9 @@
 
 #include <map>
 #include <vector>
-#include "Key.h"
-#include "Buffer.h"
-#include "PlatformUtils.h"
+#include <drive/kad/Key.h>
+#include <drive/kad/Buffer.h>
+#include <drive/kad/PlatformUtils.h>
 
 namespace kad
 {

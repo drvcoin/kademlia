@@ -30,8 +30,8 @@
 #include <string.h>
 #include <memory>
 #include <string>
-#include "IOutputStream.h"
-#include "IInputStream.h"
+#include <drive/common/IOutputStream.h>
+#include <drive/common/IInputStream.h>
 
 namespace kad
 {
@@ -40,7 +40,7 @@ namespace kad
     unsigned long addr = 0;
     unsigned short port = 0;
 
-    bool Serialize(IOutputStream & output) const
+    bool Serialize(bdfs::IOutputStream & output) const
     {
       output.WriteInt32(static_cast<int32_t>(addr));
       output.WriteInt16(static_cast<int16_t>(port));
@@ -48,7 +48,7 @@ namespace kad
     }
 
 
-    bool Deserialize(IInputStream & input)
+    bool Deserialize(bdfs::IInputStream & input)
     {
       if (input.Remainder() < sizeof(int32_t) + sizeof(int16_t))
       {

@@ -39,7 +39,7 @@ namespace kad
     }
 
 
-    bool FindNode::Serialize(IOutputStream & output) const
+    bool FindNode::Serialize(bdfs::IOutputStream & output) const
     {
       if (!this->key || !this->SerializeOpCode(output))
       {
@@ -50,7 +50,7 @@ namespace kad
     }
 
 
-    bool FindNode::Deserialize(IInputStream & input)
+    bool FindNode::Deserialize(bdfs::IInputStream & input)
     {
       if (!this->DeserializeOpCode(input))
       {

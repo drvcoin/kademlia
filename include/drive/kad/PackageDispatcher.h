@@ -31,10 +31,10 @@
 #include <thread>
 #include <map>
 #include <chrono>
-#include "Contact.h"
-#include "Thread.h"
-#include "Package.h"
-#include "ITransport.h"
+#include <drive/kad/Contact.h>
+#include <drive/kad/Thread.h>
+#include <drive/kad/Package.h>
+#include <drive/kad/ITransport.h>
 
 namespace kad
 {

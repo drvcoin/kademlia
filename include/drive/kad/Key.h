@@ -30,8 +30,8 @@
 #include <stdlib.h>
 #include <memory>
 #include <string>
-#include "IOutputStream.h"
-#include "IInputStream.h"
+#include <drive/common/IOutputStream.h>
+#include <drive/common/IInputStream.h>
 
 namespace kad
 {
@@ -75,9 +75,9 @@ namespace kad
 
     bool FromString(const char * str);
 
-    bool Serialize(IOutputStream & output) const;
+    bool Serialize(bdfs::IOutputStream & output) const;
 
-    bool Deserialize(IInputStream & input);
+    bool Deserialize(bdfs::IInputStream & input);
 
   private:
 
